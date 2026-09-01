@@ -1,0 +1,176 @@
+{
+  "schema_version": "1.0",
+  "api_id": "citfix.batch_resolve",
+  "status": "stub",
+  "description": "CIT automation pipeline batch resolve/writeback API; aligned with bugfix batch_solve input semantics. Stub only — no business logic.",
+  "paths": {
+    "mcp_tool": "citfix_batch_resolve",
+    "mcp_server": "citfix-mcp",
+    "rest": "POST /citfix/v1/batch/resolve",
+    "cli": "scripts/citfix_batch.py resolve",
+    "python": "tests.citfix.batch_api.stub_batch_resolve"
+  },
+  "companion_apis": {
+    "query": {
+      "mcp_tool": "citfix_batch_query",
+      "rest": "GET /citfix/v1/batch/{batch_id}",
+      "status": "reserved"
+    },
+    "retry": {
+      "mcp_tool": "citfix_batch_retry",
+      "rest": "POST /citfix/v1/batch/{batch_id}/retry",
+      "status": "reserved"
+    },
+    "stats": {
+      "mcp_tool": "citfix_batch_stats",
+      "rest": "GET /citfix/v1/batch/{batch_id}/stats",
+      "status": "reserved"
+    }
+  },
+  "request": {
+    "type": "object",
+    "required": ["schema_version", "bug_ids", "operator", "resolve_result"],
+    "properties": {
+      "schema_version": { "type": "string", "const": "1.0" },
+      "batch_id": {
+        "type": "string",
+        "description": "Optional; server generates CIT-BATCH-<date>-<seq> if omitted"
+      },
+      "bug_ids": {
+        "type": "array",
+        "items": { "type": "integer" },
+        "description": "Problem ID array; aligned with bugfix --bug-id a,b,c"
+      },
+      "operator": {
+        "type": "string",
+        "description": "Actor account / employee id for audit and comment prefix"
+      },
+      "resolve_result": {
+        "type": "string",
+        "enum": ["resolved", "active", "closed", "skip", "manual"],
+        "description": "Batch-default resolve outcome"
+      },
+      "comment": {
+        "type": "string",
+        "description": "Batch-default resolution note; empty means no zentao comment"
+      },
+      "options": {
+        "type": "object",
+        "properties": {
+          "dedupe": { "type": "boolean", "default": true },
+          "update_zentao_status": { "type": "boolean", "default": true },
+          "add_zentao_comment": { "type": "boolean", "default": true },
+          "update_local_state": { "type": "boolean", "default": true },
+          "fail_fast": { "type": "boolean", "default": false },
+          "max_retries": { "type": "integer", "default": 3, "minimum": 0 },
+          "dry_run": { "type": "boolean", "default": false }
+        }
+      },
+      "per_bug_overrides": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["bug_id"],
+          "properties": {
+            "bug_id": { "type": "integer" },
+            "resolve_result": {
+              "type": "string",
+              "enum": ["resolved", "active", "closed", "skip", "manual"]
+            },
+            "comment": { "type": "string" }
+          }
+        }
+      },
+      "context": {
+        "type": "object",
+        "properties": {
+          "project": { "type": "string" },
+          "run_ids": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          },
+          "source": { "type": "string", "default": "citfix" }
+        }
+      }
+    }
+  },
+  "response": {
+    "type": "object",
+    "required": ["schema_version", "ok", "batch_id", "stats", "items"],
+    "properties": {
+      "schema_version": { "type": "string" },
+      "ok": { "type": "boolean" },
+      "batch_id": { "type": "string" },
+      "operator": { "type": "string" },
+      "stats": {
+        "type": "object",
+        "required": ["total", "succeeded", "failed", "skipped"],
+        "properties": {
+          "total": { "type": "integer" },
+          "succeeded": { "type": "integer" },
+          "failed": { "type": "integer" },
+          "skipped": { "type": "integer" },
+          "deduped_removed": { "type": "integer" },
+          "retried": { "type": "integer" }
+        }
+      },
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["bug_id", "status"],
+          "properties": {
+            "bug_id": { "type": "integer" },
+            "status": {
+              "type": "string",
+              "enum": ["succeeded", "failed", "skipped"]
+            },
+            "zentao_status": { "type": ["string", "null"] },
+            "comment_written": { "type": "boolean" },
+            "local_state_updated": { "type": "boolean" },
+            "attempts": { "type": "integer" },
+            "error_code": { "type": "string" },
+            "message": { "type": "string" }
+          }
+        }
+      },
+      "errors": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "bug_id": { "type": "integer" },
+            "error_code": { "type": "string" },
+            "retryable": { "type": "boolean" },
+            "message": { "type": "string" }
+          }
+        }
+      },
+      "created_at": { "type": "string", "format": "date-time" },
+      "finished_at": { "type": "string", "format": "date-time" }
+    }
+  },
+  "error_codes": [
+    "INVALID_REQUEST",
+    "EMPTY_BUG_LIST",
+    "AUTH_FAILED",
+    "BUG_NOT_FOUND",
+    "ZENTAO_TIMEOUT",
+    "ZENTAO_REJECTED",
+    "STATE_IO_ERROR",
+    "RETRY_EXHAUSTED",
+    "INFRA_UNAVAILABLE"
+  ],
+  "bugfix_alignment": {
+    "multi_bug_input": "batch_solve / bugfix-batch --bug-id comma list",
+    "local_state": "batch_state_query update (single bug today)",
+    "zentao_writeback": "zentao_update_bug (single bug today)",
+    "gaps_filled_by_this_api": [
+      "explicit batch_id",
+      "operator",
+      "bug_ids array + batch resolve_result/comment",
+      "dedupe / retry / stats in one response"
+    ]
+  },
+  "doc": "docs/citfix-batch-api.md"
+}
