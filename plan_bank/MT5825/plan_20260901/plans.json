@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0",
+  "problems": [
+    {
+      "description": "【CIT】SAR传感器概率不通过  1/3",
+      "zentao_id": "97203",
+      "project_name": "MT5825",
+      "status": "active",
+      "analysis_conclusion_path": "D:\\Workspace\\cit-workflow-test\\07_analysis\\output\\root_cause_97203.json"
+    }
+  ]
+}

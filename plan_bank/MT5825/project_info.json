@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0",
+  "project_name": "MT5825",
+  "code_root": "/home2/wanglingqi/MT5825/",
+  "cit_source_root": "/home2/wanglingqi/Workspace/MeiGLink/cit4",
+  "device_serial": "",
+  "server": "110",
+  "repo_branches": [
+    {
+      "tree": "code",
+      "path": "/home2/wanglingqi/MT5825/",
+      "branch": "",
+      "head": ""
+    },
+    {
+      "tree": "cit",
+      "path": "/home2/wanglingqi/Workspace/MeiGLink/cit4",
+      "branch": "",
+      "head": ""
+    }
+  ]
+}
