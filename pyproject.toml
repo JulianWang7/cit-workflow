@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cit-workflow"
+version = "0.1.0"
+description = "CIT 自动化工作流：环境准备/上下文快照 + 内嵌公共 MCP（bugflow core 兼容层）"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+    "paramiko>=3.0",
+    "openpyxl>=3.1",
+    "pyyaml>=6.0",
+    "cryptography>=41.0",
+    "pyserial>=3.5",
+]
+
+[project.optional-dependencies]
+mcp = ["mcp>=1.29,<2"]
+dev = ["pytest>=7.0"]
+
+[tool.setuptools.packages.find]
+include = ["bugflow*"]
+
+[tool.setuptools]
+py-modules = []

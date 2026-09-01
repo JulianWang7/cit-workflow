@@ -1,0 +1,26 @@
+# 本地运行产物（可含设备路径/附件引用）
+runs/*
+!runs/.gitkeep
+
+# 渲染后的本机绝对路径 mcp（若误生成）
+# 默认仓库内 mcp.json 应为 ${env:...} 插值版；勿提交个人渲染结果覆盖。
+
+# 凭据与编辑器
+.env
+*.pem
+.vscode/
+.idea/
+
+# Cursor 本地态；保留可共享的 skills
+.cursor/*
+!.cursor/skills/
+!.cursor/skills/**
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.eggs/
+dist/
+build/
