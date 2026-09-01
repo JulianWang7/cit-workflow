@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "cit_context_snapshot.schema.json",
+  "title": "CIT context snapshot",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "run_id",
+    "source",
+    "gates",
+    "validation"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "minLength": 1 },
+    "run_id": { "type": "string", "minLength": 1 },
+    "task_ref": { "type": "string" },
+    "workspace_ref": { "type": "string" },
+    "source": {
+      "type": "object",
+      "required": ["project", "code_root"],
+      "properties": {
+        "project": { "type": "string" },
+        "code_root": { "type": "string", "minLength": 1 },
+        "cit_source_path": { "type": "string" },
+        "cit_version": { "type": "string" },
+        "device_label_verified": { "type": "boolean" }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "properties": {
+        "attachments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id"],
+            "properties": {
+              "id": {},
+              "name": { "type": "string" },
+              "local_path": { "type": "string" },
+              "sha256": { "type": "string" },
+              "missing": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    },
+    "routing": {
+      "type": "object",
+      "properties": {
+        "compile_mode": { "type": "string" },
+        "verify_mode": { "type": "string" }
+      }
+    },
+    "gates": {
+      "type": "object",
+      "required": ["ready_for_analyze"],
+      "properties": {
+        "ready_for_analyze": { "type": "boolean" }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "required": ["ok", "errors"],
+      "properties": {
+        "ok": { "type": "boolean" },
+        "errors": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}

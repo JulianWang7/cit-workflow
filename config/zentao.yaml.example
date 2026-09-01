@@ -1,0 +1,9 @@
+# 禅道配置模板。复制到 ~/.bugfix-flow/zentao.yaml 后改成自己的。
+# bugflow.core.config.load_zentao_config() 按这里的 zentao.<key> 取值。
+
+zentao:
+  base_url: http://your-zentao-server:9100    # 禅道访问地址
+  user: yourname                              # 登录用户名
+  password: ''                                # 登录密码
+  mcp_token: ''                               # MCP Token（禅道 → 设置 → MCP 页面生成）
+  mcp_secret: ''                              # MCP Secret（同上）

@@ -1,0 +1,9 @@
+{
+  "schema_version": "1.0",
+  "server": "110",
+  "code_root": "/home2/example/MT5825/",
+  "device_serial": "ef778938",
+  "meiglink_root": "/home2/example/Workspace/MeiGLink",
+  "cit_source_path": "/home2/example/Workspace/MeiGLink/cit4",
+  "updated_at": "2026-09-01T09:00:00+08:00"
+}

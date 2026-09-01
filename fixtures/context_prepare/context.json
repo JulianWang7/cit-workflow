@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "run_id": "CIT-SMOKE-97203",
+  "task_ref": "task_ref.json",
+  "workspace_ref": "workspace.json",
+  "source": {
+    "project": "MT5825",
+    "code_root": "/home2/example/MT5825/",
+    "cit_source_path": "/home2/example/Workspace/MeiGLink/cit4",
+    "cit_version": "cit4",
+    "device_label_verified": false
+  },
+  "evidence": {
+    "attachments": [
+      {
+        "id": 241686,
+        "name": "2026-08-21-163628.zip",
+        "local_path": "",
+        "sha256": "",
+        "missing": true
+      }
+    ]
+  },
+  "routing": {
+    "compile_mode": "gradle_or_skip",
+    "verify_mode": "cit"
+  },
+  "gates": {
+    "ready_for_analyze": true
+  },
+  "validation": {
+    "ok": true,
+    "errors": [
+      "attachment 241686 not localized (missing=true)"
+    ]
+  }
+}

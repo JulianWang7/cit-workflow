@@ -1,0 +1,20 @@
+# SSH 服务器配置模板。复制到 ~/.bugfix-flow/servers.yaml 后改成自己的。
+# bugflow.core.config.load_server_config(name) 按这里的 servers.<name> 取值。
+
+servers:
+  '252':
+    host: 172.16.10.252
+    port: 2204
+    user: yangwei
+    key_file: ~/.ssh/id_rsa      # 支持 ~ 展开；与 password 二选一
+    password: ''                 # 无 key 时填密码
+    code_roots:
+      - /home7/yangwei/SRM965    # Android 源码树根（compile/git 操作基准）
+
+  # '11':
+  #   host: 172.16.10.11
+  #   port: 22
+  #   user: yangwei
+  #   key_file: ~/.ssh/id_rsa
+  #   code_roots:
+  #     - /home/yangwei/AOSP
