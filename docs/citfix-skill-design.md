@@ -1,8 +1,9 @@
 # citfix — CIT 自动化流水线入口设计
 
-> 版本：2026-09-01  
+> 版本：2026-09-02  
 > 状态：**工作流完善阶段**（入口已冻结，各阶段能力逐段落地）  
-> 关联：EXP-CIT-004～011、`workflow/citfix_pipeline.json`、KB-002
+> 关联（现行）：`contracts/citfix_pipeline.json`、`docs/citfix-stage-gates.md`、`citfix/`、KB-002  
+> **[LEGACY-DESIGN 2026-08-29，非现行契约]** EXP-CIT-004～011（含 004/009）仅历史对照
 
 ## 1. 定位（必读）
 
@@ -23,7 +24,7 @@
         ▼
    citfix Skill（编排 EXP-CIT 各阶段）
         │
-        ├── cit-workflow-test/（阶段产物）
+        ├── runs_work/（阶段产物）
         ├── workflow_state.json（续跑真源）
         └── 可选：scripts/citfix.py（03–06b 状态同步，非入口）
 ```
@@ -44,13 +45,15 @@
 │  /citfix — CIT 自动化流水线入口（交互编排层）              │
 │  · 按 citfix_pipeline.json 推进 00–14 阶段                │
 │  · 读 KB 分册 + workflow_state + 测试床产物               │
-│  · 阶段内：MCP、bugfix-*、写 JSON、卡点、续跑              │
+│  · 阶段内：项目 MCP、项目 cit-* skill、写 JSON、卡点、续跑   │
 │  · 完善阶段：未就绪段卡点停住，不跳步                      │
+│  · 禁止：用户级 ~/.cursor/skills/bugfix-*                 │
 └───────────────────────┬─────────────────────────────────┘
                         │ 底层（非入口）
                         ▼
 ┌─────────────────────────────────────────────────────────┐
-│  scripts/citfix.py · tests/citfix/ · pipeline.json      │
+│  scripts/citfix.py · citfix/ · pipeline.json      │
+│  （auto 段执行 / agent 段仅校验 output 文件是否存在）       │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -61,10 +64,10 @@
 工作区：`D:\Workspace\cit-workflow`
 
 ```powershell
-cursor agent --workspace . "/citfix 97203 --resume"
+cursor-agent --workspace . "/citfix 97203 --resume"
 ```
 
-进度真源：`cit-workflow-test/00_runs/<run_id>/workflow_state.json`
+进度真源：`runs_work/projects/<PRODUCT>/runs/<run_id>/workflow_state.json`
 
 ### 4.2 建设场景：IDE 内完善流水线实现
 
@@ -82,7 +85,7 @@ cursor agent --workspace . "/citfix 97203 --resume"
 └── ide-maintenance.md       # 建设期：改引擎/阶段代码
 
 .cursor/rules/citfix-guide.mdc
-workflow/citfix_pipeline.json
+contracts/citfix_pipeline.json
 docs/citfix-skill-design.md  # 本文档
 ```
 
@@ -93,28 +96,30 @@ docs/citfix-skill-design.md  # 本文档
  → 读 workflow_state，确定 current_stage
  → 读 EXP-CIT 当前分册
  → 执行本阶段（完善中的段允许 partial + 卡点）
- → 写 cit-workflow-test/<stage>/output/
+ → 正式写 cit-workflow/runs/<run_id>/<stage>/output/；中间镜像 runs_work/projects/<PRODUCT>/runs/<run_id>/
  → 通过则 completed 并推进；否则 CHECKPOINT 停住
  → /citfix --resume 从停处继续
 ```
 
 ## 7. 与 android-bugfix-flow 的区别
 
-| | `/citfix` | `/bugfix` |
-|--|-----------|-----------|
-| 目标 | CIT **自动化流水线**全链路 | 单 Bug 修复七步 |
-| 产物 | `cit-workflow-test` 分阶段 JSON | 会话 + ~/.bugfix-flow |
-| 状态 | `workflow_state.json` | `workspace.json`（单文件） |
+| | citfix（本仓） | bugfix（用户级 / 插件仓） |
+|--|----------------|---------------------------|
+| 入口 | `/citfix` | `/bugfix` |
+| Skill | 仅 `.cursor/skills/cit*` | `~/.cursor/skills/bugfix-*` |
+| MCP | 仓内 `cit_mcp_launch` + 拷贝的 bugflow | 用户 mcp.json → android-bugfix-flow |
+| 产物 | `runs_work/projects/<PRODUCT>/runs/<run_id>/` | 会话 + ~/.bugfix-flow |
+| 状态 | `workflow_state.json` | 全局 `workspace.json` |
 | 现状 | 完善阶段，逐段落地 | 已成熟 |
 
-流水线内 **07+ 可调用 bugfix-* 能力**，但入口仍是 `/citfix`。
+流水线 07+ **只调用本仓 `cit-*` skill**，不再调用用户级 `bugfix-*`。公共 MCP **源码**已拷贝进本仓；运行时凭据仍可读 `~/.bugfix-flow`。
 
 ## 8. 批量接口（预留）
 
 单 Bug 入口：`/citfix {bug_id}`。跨多 Bug 闭环写回见：
 
 - `docs/citfix-batch-api.md`
-- `workflow/citfix_batch_api.json`（`citfix_batch_resolve`）
+- `contracts/citfix_batch_api.json`（`citfix_batch_resolve`）
 
 与 bugfix `/batch_solve` 对齐的输入：`batch_id`、`bug_ids[]`、`operator`、`resolve_result`、`comment`。
 
@@ -124,5 +129,5 @@ docs/citfix-skill-design.md  # 本文档
 - [ ] 不以「请运行 citfix.py」作为对用户的主回复
 - [ ] 卡点有四要素 + `CHECKPOINT.md`
 - [ ] `--resume` 接续同一 run，已完成阶段不覆盖
-- [ ] 产物在 `cit-workflow-test`，建设代码在 `cit-workflow/tests/citfix/`
+- [ ] 产物在 `runs_work`，建设代码在 `cit-workflow/citfix/`
 - [ ] 批量契约已预留，实现前不声称具备批量禅道写回 API

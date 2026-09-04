@@ -87,7 +87,7 @@ runs/<run_id>/
   },
   "routing": {
     "compile_mode": "gradle_or_skip",
-    "verify_mode": "cit"
+    "verify_mode": "auto"
   },
   "gates": {
     "ready_for_analyze": true

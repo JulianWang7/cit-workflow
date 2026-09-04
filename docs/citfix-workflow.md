@@ -11,7 +11,7 @@
 ```
 
 ```powershell
-cursor agent --workspace D:\Workspace\cit-workflow "/citfix 97203 --resume"
+cursor-agent --workspace D:\Workspace\cit-workflow "/citfix 97203 --resume"
 ```
 
 ## 文件索引
@@ -20,7 +20,9 @@ cursor agent --workspace D:\Workspace\cit-workflow "/citfix 97203 --resume"
 |------|------|
 | Skill（入口） | `.cursor/skills/citfix/SKILL.md` |
 | 规则 | `.cursor/rules/citfix-guide.mdc` |
-| 阶段契约 | `workflow/citfix_pipeline.json` |
-| 状态真源 | `cit-workflow-test/00_runs/<run_id>/workflow_state.json` |
-| 引擎（建设） | `tests/citfix/` |
+| 阶段契约 | `contracts/citfix_pipeline.json` |
+| 门禁契约（现行） | `docs/citfix-stage-gates.md` |
+| Skill 厚度与 01–02 说明 | `docs/citfix-skill-thickness.md` |
+| 状态真源 | `runs_work/projects/<PRODUCT>/runs/<run_id>/workflow_state.json` |
+| 引擎（建设） | `citfix/` |
 | 状态同步（底层） | `scripts/citfix.py` |

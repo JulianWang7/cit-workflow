@@ -3,7 +3,7 @@
 > 版本：v0.1（契约预留，实现待落地）  
 > 日期：2026-09-01  
 > 对齐：android-bugfix-flow `batch_solve` / `batch_state_query` / `zentao_update_bug`  
-> 契约文件：`workflow/citfix_batch_api.json`
+> 契约文件：`contracts/citfix_batch_api.json`
 
 ## 1. 现状对照（bugfix）
 
@@ -35,7 +35,7 @@
 | MCP（首选） | `citfix_batch_resolve` | cit-workflow MCP / misc 扩展预留名 |
 | 逻辑 REST（预留） | `POST /citfix/v1/batch/resolve` | 将来若挂控制面服务时对齐 |
 | CLI（预留） | `python scripts/citfix_batch.py resolve --request <json>` | 与 MCP 同 schema |
-| 内部 Python | `citfix.batch.resolve(BatchResolveRequest) -> BatchResolveResult` | `tests/citfix/` 落地 |
+| 内部 Python | `citfix.batch.resolve(BatchResolveRequest) -> BatchResolveResult` | `citfix/` 落地 |
 
 配套查询（扩展预留，本版仅声明）：
 
@@ -224,7 +224,7 @@ HTTP 预留：业务部分失败仍建议 **HTTP 200 + `ok:false`**；参数非�
 
 | 能力 | 扩展方式 |
 |------|----------|
-| 大量问题汇总 | `citfix_batch_stats` + `stats` 持久化到 `cit-workflow-test/00_runs/<batch_id>/batch_result.json` |
+| 大量问题汇总 | `citfix_batch_stats` + `stats` 持久化到 `runs_work/projects/_unassigned/runs/<batch_id>/batch_result.json` |
 | 批量去重 | `options.dedupe`；扩展 `dedupe_key`（id / title hash） |
 | 失败重试 | `citfix_batch_retry`；消费 `errors[]` |
 | 结果统计 | `stats` + Excel/Markdown 报告（对齐 `export_excel`） |
@@ -235,8 +235,8 @@ HTTP 预留：业务部分失败仍建议 **HTTP 200 + `ok:false`**；参数非�
 
 | 项 | 状态 |
 |----|------|
-| 契约 JSON | `workflow/citfix_batch_api.json` |
-| 共享 stub | `tests/citfix/batch_api.py`（校验参数壳，返回 `NOT_IMPLEMENTED`） |
+| 契约 JSON | `contracts/citfix_batch_api.json` |
+| 共享 stub | `citfix/batch_api.py`（校验参数壳，返回 `NOT_IMPLEMENTED`） |
 | MCP 壳 | `mcp/citfix_server.py` → 工具 `citfix_batch_*`；启动：`cit_mcp_launch.py citfix` |
 | CLI 壳 | `scripts/citfix_batch.py`（resolve/query/retry/stats） |
 | 业务实现 | **未做**（不写禅道、不改 batch 状态）；当前优先单 Bug `/citfix` |
