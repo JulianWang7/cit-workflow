@@ -1,0 +1,2 @@
+# APScheduler watch service (optional; cit_watch_once works without it)
+apscheduler>=3.10,<4
