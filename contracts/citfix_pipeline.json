@@ -1,0 +1,346 @@
+{
+  "schema_version": "1.0",
+  "pipeline_id": "citfix",
+  "trigger": "/citfix {bug_id} | /citfix project <alias>",
+  "description": "CIT automation pipeline entry. Authority: citfix/ + this file + docs/citfix-stage-gates.md. [LEGACY] EXP-CIT-004..011 are historical only.",
+  "authority": "code",
+  "stage_gates_doc": "docs/citfix-stage-gates.md",
+  "entry_modes": {
+    "citfix_direct": {
+      "description": "Start from bug id (/citfix 97203); skip req-table stages 01-02",
+      "skip_stages": ["01_req_parse", "02_bug_task_extract"]
+    },
+    "citfix_project": {
+      "description": "Child bug runs under /citfix project: skip 01-02 (intake already done by batch discover)",
+      "skip_stages": ["01_req_parse", "02_bug_task_extract"],
+      "force_verify_auto": true,
+      "serial": true
+    },
+    "citfix_batch_discover": {
+      "description": "Run only intake stages 00–02 for /citfix project (batch run_id)",
+      "skip_stages": [
+        "03_zentao_fetch",
+        "04_result_normalize",
+        "05_cursor_handoff",
+        "06_context_snapshot",
+        "06b_plan_bank",
+        "07_analysis",
+        "08_changes",
+        "09_jenkins_build",
+        "10_artifacts",
+        "11_qfil_flash",
+        "12_cit_test",
+        "13_human_gate",
+        "14_closure"
+      ],
+      "force_verify_auto": true,
+      "serial": true
+    }
+  },
+  "paths": {
+    "repo_root": ".",
+    "runs_root": "runs",
+    "test_bed_root": "runs_work",
+    "kb_pipeline_root": "../GDocuments/embedded-workflow-lab/knowledge-base/topics/cit/cit-automation-pipeline"
+  },
+  "cit_title_gate": {
+    "enabled": true,
+    "pattern": "CIT|【CIT】|\\[CIT问题\\]"
+  },
+  "gates": {
+    "allow_missing_attachments": false,
+    "require_device_label_verified": true,
+    "verify_runtime_force_auto": true,
+    "push_zentao_close_enforced": false
+  },
+  "stages": [
+    {
+      "id": "00_run_registry",
+      "dir": "00_runs",
+      "title": "Run registry",
+      "legacy_kb_doc": "EXP-CIT-004",
+      "legacy_kb_file": "EXP-CIT-004-CIT自动化流水线总览与成熟度分层_2026-08-29.md",
+      "executor": "auto",
+      "required_outputs": ["workflow_state.json", "run.json"]
+    },
+    {
+      "id": "01_req_parse",
+      "dir": "01_req_parse",
+      "title": "Requirement / ZenTao list parse",
+      "kb_doc": "EXP-CIT-005",
+      "kb_file": "EXP-CIT-005-CIT任务接入上下文快照与环境准备_2026-08-29.md",
+      "executor": "auto",
+      "skills": [
+        {
+          "name": "cit-req-parse",
+          "path": ".cursor/skills/cit-req-parse/SKILL.md",
+          "role": "primary",
+          "marker": "CANDIDATE_ROWS_READY"
+        }
+      ],
+      "mcp_hints": ["zentao_my_bugs", "zentao_list_products", "zentao_search_bugs"],
+      "required_outputs": ["output/candidate_rows.json"]
+    },
+    {
+      "id": "02_bug_task_extract",
+      "dir": "02_bug_task_extract",
+      "title": "Bug/task id extract",
+      "kb_doc": "EXP-CIT-005",
+      "kb_file": "EXP-CIT-005-CIT任务接入上下文快照与环境准备_2026-08-29.md",
+      "executor": "auto",
+      "skills": [
+        {
+          "name": "cit-bug-extract",
+          "path": ".cursor/skills/cit-bug-extract/SKILL.md",
+          "role": "primary",
+          "marker": "BUG_IDS_READY"
+        }
+      ],
+      "mcp_hints": ["zentao_my_bugs"],
+      "required_outputs": ["output/bug_ids.json", "output/bug_task_ids.json"],
+      "inputs_from": ["01_req_parse/output/candidate_rows.json"]
+    },
+    {
+      "id": "03_zentao_fetch",
+      "dir": "03_zentao_fetch",
+      "title": "Zentao fetch",
+      "kb_doc": "EXP-CIT-005",
+      "kb_file": "EXP-CIT-005-CIT任务接入上下文快照与环境准备_2026-08-29.md",
+      "executor": "auto",
+      "required_outputs": [
+        "output/zentao_fetch_results.json",
+        "intermediate/zentao_get_bug_{bug_id}_structured.json"
+      ]
+    },
+    {
+      "id": "04_result_normalize",
+      "dir": "04_result_normalize",
+      "title": "Normalize tasks.json",
+      "kb_doc": "EXP-CIT-005",
+      "kb_file": "EXP-CIT-005-CIT任务接入上下文快照与环境准备_2026-08-29.md",
+      "executor": "auto",
+      "required_outputs": ["output/tasks.json", "intermediate/validation.json"]
+    },
+    {
+      "id": "05_cursor_handoff",
+      "dir": "05_cursor_handoff",
+      "title": "Cursor handoff bundle",
+      "kb_doc": "EXP-CIT-005",
+      "kb_file": "EXP-CIT-005-CIT任务接入上下文快照与环境准备_2026-08-29.md",
+      "executor": "auto",
+      "required_outputs": ["output/cursor_handoff_bundle.json"]
+    },
+    {
+      "id": "06_context_snapshot",
+      "dir": "06_context_snapshot",
+      "title": "Context snapshot",
+      "kb_doc": "EXP-CIT-005",
+      "kb_file": "EXP-CIT-005-CIT任务接入上下文快照与环境准备_2026-08-29.md",
+      "executor": "auto",
+      "required_outputs": [
+        "output/task_ref.json",
+        "output/workspace.json",
+        "output/context.json"
+      ]
+    },
+    {
+      "id": "06b_plan_bank",
+      "dir": "06_context_snapshot",
+      "title": "Plan bank persist",
+      "kb_doc": "EXP-CIT-005",
+      "kb_file": "EXP-CIT-005-CIT任务接入上下文快照与环境准备_2026-08-29.md",
+      "executor": "auto",
+      "required_outputs": []
+    },
+    {
+      "id": "07_analysis",
+      "dir": "07_analysis",
+      "title": "Root cause analysis",
+      "kb_doc": "EXP-CIT-006",
+      "kb_file": "EXP-CIT-006-CIT源码分析改码审查与变更控制_2026-08-29.md",
+      "executor": "agent",
+      "required_outputs": ["output/root_cause_{bug_id}.json"],
+      "skill_hints": ["cit-analyze"],
+      "skills": [
+        {
+          "name": "cit-analyze",
+          "path": ".cursor/skills/cit-analyze/SKILL.md",
+          "role": "primary",
+          "marker": "ROOT_CAUSE_FOUND"
+        }
+      ],
+      "inputs_from": [
+        "06_context_snapshot/output/context.json",
+        "06_context_snapshot/output/task_ref.json",
+        "06_context_snapshot/output/workspace.json"
+      ]
+    },
+    {
+      "id": "08_changes",
+      "dir": "08_changes",
+      "title": "Change bundle",
+      "kb_doc": "EXP-CIT-006",
+      "kb_file": "EXP-CIT-006-CIT源码分析改码审查与变更控制_2026-08-29.md",
+      "executor": "agent",
+      "required_outputs": ["output/change_{bug_id}.json"],
+      "skill_hints": ["cit-modify", "cit-review"],
+      "skills": [
+        {
+          "name": "cit-modify",
+          "path": ".cursor/skills/cit-modify/SKILL.md",
+          "role": "primary",
+          "marker": "PATCH_DONE"
+        },
+        {
+          "name": "cit-review",
+          "path": ".cursor/skills/cit-review/SKILL.md",
+          "role": "review",
+          "marker": "REVIEW_PASS"
+        }
+      ],
+      "inputs_from": [
+        "07_analysis/output/root_cause_{bug_id}.json",
+        "06_context_snapshot/output/context.json",
+        "06_context_snapshot/output/workspace.json"
+      ]
+    },
+    {
+      "id": "09_jenkins_build",
+      "dir": "09_jenkins_build",
+      "title": "Jenkins build",
+      "kb_doc": "EXP-CIT-007",
+      "kb_file": "EXP-CIT-007-CIT-Jenkins构建编排与制品管理_2026-08-29.md",
+      "executor": "agent",
+      "required_outputs": ["output/build_{bug_id}.json"],
+      "skill_hints": ["cit-compile"],
+      "skills": [
+        {
+          "name": "cit-compile",
+          "path": ".cursor/skills/cit-compile/SKILL.md",
+          "role": "primary",
+          "marker": "COMPILE_DONE"
+        }
+      ],
+      "inputs_from": [
+        "08_changes/output/change_{bug_id}.json",
+        "06_context_snapshot/output/context.json",
+        "06_context_snapshot/output/workspace.json"
+      ]
+    },
+    {
+      "id": "10_artifacts",
+      "dir": "10_artifacts",
+      "title": "Artifact download",
+      "kb_doc": "EXP-CIT-007",
+      "kb_file": "EXP-CIT-007-CIT-Jenkins构建编排与制品管理_2026-08-29.md",
+      "executor": "agent",
+      "required_outputs": ["output/artifact_{bug_id}.json"],
+      "skill_hints": ["cit-artifacts"],
+      "skills": [
+        {
+          "name": "cit-artifacts",
+          "path": ".cursor/skills/cit-artifacts/SKILL.md",
+          "role": "primary",
+          "marker": "ARTIFACT_READY"
+        }
+      ],
+      "inputs_from": [
+        "09_jenkins_build/output/build_{bug_id}.json",
+        "06_context_snapshot/output/workspace.json"
+      ]
+    },
+    {
+      "id": "11_qfil_flash",
+      "dir": "11_qfil_flash",
+      "title": "QFIL flash",
+      "kb_doc": "EXP-CIT-008",
+      "kb_file": "EXP-CIT-008-CIT设备调度QFIL烧录与版本核验_2026-08-29.md",
+      "executor": "agent",
+      "required_outputs": ["output/flash_{bug_id}.json"],
+      "skill_hints": ["cit-flash"],
+      "skills": [
+        {
+          "name": "cit-flash",
+          "path": ".cursor/skills/cit-flash/SKILL.md",
+          "role": "primary",
+          "marker": "FLASH_DONE"
+        }
+      ],
+      "mcp_hints": ["qcom_flash", "device_state", "adb_shell", "flash_status"]
+    },
+    {
+      "id": "12_cit_test",
+      "dir": "12_cit_test",
+      "title": "CIT test execution",
+      "legacy_kb_doc": "EXP-CIT-009",
+      "legacy_kb_file": "EXP-CIT-009-CIT测试执行人工门禁与证据归档_2026-08-29.md",
+      "executor": "agent",
+      "required_outputs": ["output/result_{bug_id}.json"],
+      "skill_hints": ["cit-reproduce", "cit-verify"],
+      "skills": [
+        {
+          "name": "cit-reproduce",
+          "path": ".cursor/skills/cit-reproduce/SKILL.md",
+          "role": "evidence",
+          "marker": "REPRODUCE_DONE"
+        },
+        {
+          "name": "cit-verify",
+          "path": ".cursor/skills/cit-verify/SKILL.md",
+          "role": "primary",
+          "marker": "VERIFY_PASS"
+        }
+      ],
+      "gate_doc": "docs/citfix-stage-gates.md"
+    },
+    {
+      "id": "13_human_gate",
+      "dir": "13_human_gate",
+      "title": "Human gate (conditional by routing.verify_mode)",
+      "legacy_kb_doc": "EXP-CIT-009",
+      "legacy_kb_file": "EXP-CIT-009-CIT测试执行人工门禁与证据归档_2026-08-29.md",
+      "executor": "agent",
+      "required_outputs": ["output/human_gate_{bug_id}.json"],
+      "skill_hints": ["cit-human-gate"],
+      "gate_doc": "docs/citfix-stage-gates.md",
+      "completion_gate_status": {
+        "auto": ["not_required", "auto_bypassed"],
+        "human": ["approved"],
+        "hybrid": ["approved"]
+      },
+      "skills": [
+        {
+          "name": "cit-human-gate",
+          "path": ".cursor/skills/cit-human-gate/SKILL.md",
+          "role": "primary",
+          "marker": "GATE_RESOLVED"
+        }
+      ]
+    },
+    {
+      "id": "14_closure",
+      "dir": "14_closure",
+      "title": "Closure",
+      "legacy_kb_doc": "EXP-CIT-011",
+      "legacy_kb_file": "EXP-CIT-011-CIT闭环通知角色工具与实施路线_2026-08-29.md",
+      "executor": "agent",
+      "required_outputs": ["output/closure_{bug_id}.json"],
+      "skill_hints": ["cit-submit"],
+      "gate_doc": "docs/citfix-stage-gates.md",
+      "skills": [
+        {
+          "name": "cit-submit",
+          "path": ".cursor/skills/cit-submit/SKILL.md",
+          "role": "primary",
+          "marker": "CLOSURE_DONE"
+        }
+      ],
+      "inputs_from": [
+        "08_changes/output/change_{bug_id}.json",
+        "12_cit_test/output/result_{bug_id}.json",
+        "13_human_gate/output/human_gate_{bug_id}.json",
+        "06_context_snapshot/output/workspace.json"
+      ]
+    }
+  ]
+}

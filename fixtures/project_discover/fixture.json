@@ -1,0 +1,107 @@
+{
+  "schema_version": "1.0",
+  "description": "Offline my_bugs + products for testing 01/02 without ZenTao assignment",
+  "zentao_user": "wanglingqi",
+  "products": [
+    {
+      "id": "10",
+      "name": "SLB783 - Android14",
+      "code": "slb783"
+    },
+    {
+      "id": "99",
+      "name": "MC5711",
+      "code": "mc5711"
+    }
+  ],
+  "my_bugs": [
+    {
+      "id": "91001",
+      "title": "【CIT】系统信息显示版本号错误",
+      "steps": "adb shell getprop ro.build.display.id",
+      "status": "active",
+      "assignedTo": "wanglingqi",
+      "product": "10",
+      "product_name": "SLB783 - Android14",
+      "severity": "3"
+    },
+    {
+      "id": "91006",
+      "title": "【CIT】蓝牙开关状态异常",
+      "steps": "toggle bluetooth in CIT wireless page",
+      "status": "active",
+      "assignedTo": "wanglingqi",
+      "product": "10",
+      "product_name": "SLB783 - Android14",
+      "severity": "3"
+    },
+    {
+      "id": "91007",
+      "title": "【CIT】WiFi开关无法打开",
+      "steps": "toggle wifi in CIT wireless page",
+      "status": "active",
+      "assignedTo": "wanglingqi",
+      "product": "10",
+      "product_name": "SLB783 - Android14",
+      "severity": "3"
+    },
+    {
+      "id": "91008",
+      "title": "[CIT问题] GPS定位超时",
+      "steps": "CIT gps location timeout",
+      "status": "active",
+      "assignedTo": "wanglingqi",
+      "product": "10",
+      "product_name": "SLB783 - Android14",
+      "severity": "2"
+    },
+    {
+      "id": "91009",
+      "title": "【CIT】传感器列表为空",
+      "steps": "CIT sensor list empty",
+      "status": "active",
+      "assignedTo": "wanglingqi",
+      "product": "10",
+      "product_name": "SLB783 - Android14",
+      "severity": "3"
+    },
+    {
+      "id": "91002",
+      "title": "【CIT】主副MIC测试异常",
+      "steps": "MIC loopback 88db",
+      "status": "active",
+      "assignedTo": "wanglingqi",
+      "product": "10",
+      "product_name": "SLB783 - Android14",
+      "severity": "2"
+    },
+    {
+      "id": "91003",
+      "title": "【CIT】别的项目不应入队",
+      "steps": "x",
+      "status": "active",
+      "assignedTo": "wanglingqi",
+      "product": "99",
+      "product_name": "MC5711",
+      "severity": "3"
+    },
+    {
+      "id": "91004",
+      "title": "显示问题缺少门禁关键字",
+      "steps": "no keyword here",
+      "status": "active",
+      "assignedTo": "wanglingqi",
+      "product": "10",
+      "product_name": "SLB783 - Android14"
+    },
+    {
+      "id": "91005",
+      "title": "【CIT】指派别人",
+      "steps": "x",
+      "status": "active",
+      "assignedTo": "other_user",
+      "product": "10",
+      "product_name": "SLB783 - Android14"
+    }
+  ]
+}

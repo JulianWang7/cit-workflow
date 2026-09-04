@@ -8,7 +8,7 @@ Usage:
   python scripts/citfix_batch.py retry --batch-id ... --bug-ids 97210
   python scripts/citfix_batch.py stats --batch-id ...
 
-契约: workflow/citfix_batch_api.json
+契约: contracts/citfix_batch_api.json
 单 Bug: /citfix {bug_id}
 """
 
@@ -23,7 +23,7 @@ REPO = Path(__file__).resolve().parents[1]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from tests.citfix.batch_api import (  # noqa: E402
+from citfix.batch_api import (  # noqa: E402
     stub_batch_query,
     stub_batch_resolve,
     stub_batch_retry,

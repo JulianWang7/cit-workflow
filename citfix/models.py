@@ -68,15 +68,30 @@ class RunContext:
     bug_id: str
     run_id: str
     run_dir: Any
+    intermediate_dir: Any
     skip_stage_ids: set[str]
+    entry_mode: str = "citfix_direct"
+    force_verify_auto: bool = False
+    device_serial_override: str | None = None
+    project_alias: str | None = None
 
     def stage_root(self, stage_cfg: dict[str, Any]):
-        return self.paths.test_bed_root / stage_cfg["dir"]
+        """正式阶段根：``cit-workflow/runs/<PRODUCT>/<run_id>/<NN_stage>/``（output 真源）。"""
+        return self.run_dir / stage_cfg["dir"]
+
+    def intermediate_stage_root(self, stage_cfg: dict[str, Any]):
+        """中间产物根：``runs_work/projects/<PRODUCT>/runs/<run_id>/<NN_stage>/``。"""
+        return self.intermediate_dir / stage_cfg["dir"]
 
     def stage_log_path(self, stage_cfg: dict[str, Any]):
-        p = self.stage_root(stage_cfg) / "logs" / f"{self.run_id}_{stage_cfg['id']}.log"
+        p = (
+            self.intermediate_stage_root(stage_cfg)
+            / "logs"
+            / f"{self.run_id}_{stage_cfg['id']}.log"
+        )
         p.parent.mkdir(parents=True, exist_ok=True)
         return p
 
     def run_stage_mirror(self, stage_cfg: dict[str, Any]):
-        return self.run_dir / stage_cfg["dir"]
+        """Mirror formal stage tree into the intermediate (test-bed) copy."""
+        return self.intermediate_stage_root(stage_cfg)

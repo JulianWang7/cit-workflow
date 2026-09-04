@@ -1,6 +1,6 @@
 """citfix batch API stubs — contract reserved, business not implemented.
 
-Aligned with workflow/citfix_batch_api.json and docs/citfix-batch-api.md.
+Aligned with contracts/citfix_batch_api.json and docs/citfix-batch-api.md.
 Single-bug /citfix remains the active path; these entry points only reserve shape.
 """
 

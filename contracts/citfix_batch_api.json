@@ -8,7 +8,7 @@
     "mcp_server": "citfix-mcp",
     "rest": "POST /citfix/v1/batch/resolve",
     "cli": "scripts/citfix_batch.py resolve",
-    "python": "tests.citfix.batch_api.stub_batch_resolve"
+    "python": "citfix.batch_api.stub_batch_resolve"
   },
   "companion_apis": {
     "query": {

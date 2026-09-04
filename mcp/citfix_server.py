@@ -6,7 +6,7 @@
   citfix_batch_retry   — 失败重试
   citfix_batch_stats   — 结果统计
 
-契约：workflow/citfix_batch_api.json
+契约：contracts/citfix_batch_api.json
 说明：docs/citfix-batch-api.md
 
 单 Bug 请继续使用 /citfix {bug_id}。
@@ -29,7 +29,7 @@ except ImportError:
     print("ERROR: mcp SDK 未安装。请 pip install -r requirements-mcp.txt", file=sys.stderr)
     sys.exit(1)
 
-from tests.citfix.batch_api import (
+from citfix.batch_api import (
     stub_batch_query,
     stub_batch_resolve,
     stub_batch_retry,

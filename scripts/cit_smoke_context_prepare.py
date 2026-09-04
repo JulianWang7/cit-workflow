@@ -3,7 +3,7 @@
 
 用法:
   python scripts/cit_smoke_context_prepare.py
-  python scripts/cit_smoke_context_prepare.py --run-dir runs/CIT-xxx
+  python scripts/cit_smoke_context_prepare.py --run-dir runs/<PRODUCT>/CIT-xxx
   python scripts/cit_smoke_context_prepare.py --fixture-dir fixtures/context_prepare
 """
 
@@ -16,6 +16,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 REQUIRED_FILES = ("workspace.json", "context.json", "task_ref.json")
+DEFAULT_TEST_BED = REPO_ROOT / "runs_work"
 
 
 def _load(path: Path) -> dict:
@@ -73,6 +74,10 @@ def validate_bundle(bundle_dir: Path) -> tuple[list[str], list[str]]:
         errors.append("context.json: gates.ready_for_analyze required")
     elif not isinstance(gates["ready_for_analyze"], bool):
         errors.append("context.json: gates.ready_for_analyze must be bool")
+    if isinstance(gates, dict) and "ready_for_reproduce" in gates and not isinstance(
+        gates["ready_for_reproduce"], bool
+    ):
+        errors.append("context.json: gates.ready_for_reproduce must be bool")
 
     validation = context.get("validation")
     if not isinstance(validation, dict):
@@ -97,19 +102,58 @@ def validate_bundle(bundle_dir: Path) -> tuple[list[str], list[str]]:
         if not isinstance(att, dict):
             continue
         if att.get("missing") is True or not att.get("local_path"):
-            warnings.append(
+            msg = (
                 f"attachment {att.get('id')} not localized "
                 f"(missing={att.get('missing')}, local_path={att.get('local_path')!r})"
             )
+            if gates.get("ready_for_analyze") is True:
+                errors.append(msg + " — cannot ready_for_analyze=true")
+            else:
+                warnings.append(msg)
+
+    if gates.get("ready_for_reproduce") is True and not workspace.get("device_serial"):
+        errors.append("ready_for_reproduce=true but workspace.device_serial empty")
 
     return errors, warnings
 
 
+def _test_bed_root() -> Path:
+    pipeline = REPO_ROOT / "contracts" / "citfix_pipeline.json"
+    if pipeline.is_file():
+        try:
+            cfg = json.loads(pipeline.read_text(encoding="utf-8"))
+            root = (cfg.get("paths") or {}).get("test_bed_root")
+            if root:
+                p = Path(root)
+                return p.resolve() if p.is_absolute() else (REPO_ROOT / p).resolve()
+        except Exception:
+            pass
+    return DEFAULT_TEST_BED.resolve()
+
+
 def resolve_default_dirs() -> list[Path]:
     dirs: list[Path] = [REPO_ROOT / "fixtures" / "context_prepare"]
-    runs = REPO_ROOT / "runs"
-    if runs.is_dir():
-        for run_dir in sorted(runs.iterdir()):
+    # Prefer formal runs/; also scan intermediate test-bed
+    formal_runs = REPO_ROOT / "runs"
+    if formal_runs.is_dir():
+        for run_dir in sorted(formal_runs.iterdir()):
+            out = run_dir / "06_context_snapshot" / "output"
+            if out.is_dir():
+                dirs.append(out)
+    test_root = _test_bed_root() / "projects"
+    if test_root.is_dir():
+        for proj in sorted(test_root.iterdir()):
+            runs = proj / "runs"
+            if not runs.is_dir():
+                continue
+            for run_dir in sorted(runs.iterdir()):
+                out = run_dir / "06_context_snapshot" / "output"
+                if out.is_dir():
+                    dirs.append(out)
+    # legacy flat layout
+    legacy = _test_bed_root() / "00_runs"
+    if legacy.is_dir():
+        for run_dir in sorted(legacy.iterdir()):
             out = run_dir / "06_context_snapshot" / "output"
             if out.is_dir():
                 dirs.append(out)
@@ -118,7 +162,11 @@ def resolve_default_dirs() -> list[Path]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="CIT context-prepare smoke test")
-    parser.add_argument("--run-dir", type=Path, help="runs/<run_id> or .../06_context_snapshot/output")
+    parser.add_argument(
+        "--run-dir",
+        type=Path,
+        help="cit-workflow/runs/<run_id> or runs_work/projects/<PRODUCT>/runs/<run_id> or .../06_context_snapshot/output",
+    )
     parser.add_argument("--fixture-dir", type=Path, help="directory containing the three JSON files")
     args = parser.parse_args()
 
