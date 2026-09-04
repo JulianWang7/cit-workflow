@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""渲染 .cursor/mcp.json：把 scripts/cit_mcp_launch.py 写成绝对路径。
+"""渲染 .cursor/mcp.json：venv 绝对路径 + cit_mcp_launch 绝对路径。
 
-MCP 实现已内嵌于本仓库 mcp/ + bugflow/。本脚本仅解决 Cursor 以非仓库
-cwd 启动、或相对路径失效时的本机注册问题。
+解决 Cursor / cursor-agent 会话报「SSH MCP isn't loaded」的常见根因：
+系统 Python 无 mcp SDK，或相对路径 cwd 不对。
 
-用法（在仓库根）:
-  set BUGFIX_CONFIG_DIR=%USERPROFILE%\\.bugfix-flow
-  python scripts/cit_render_mcp_json.py
+用法（仓库根）:
+  .\\.venv\\Scripts\\python.exe scripts\\cit_render_mcp_json.py
 """
 
 from __future__ import annotations
@@ -22,20 +21,34 @@ LAUNCH = REPO / "scripts" / "cit_mcp_launch.py"
 SERVERS = ("ssh", "adb", "zentao", "kb", "misc", "citfix")
 
 
+def _prefer_venv_python() -> str:
+    override = os.environ.get("CIT_BUGFLOW_PYTHON")
+    if override:
+        return override
+    win = REPO / ".venv" / "Scripts" / "python.exe"
+    if win.is_file():
+        return str(win.resolve())
+    unix = REPO / ".venv" / "bin" / "python"
+    if unix.is_file():
+        return str(unix.resolve())
+    return str(Path(sys.executable).resolve())
+
+
 def main() -> int:
     if not LAUNCH.is_file():
         print(f"缺少 {LAUNCH}", file=sys.stderr)
         return 1
 
     cfg_dir = os.environ.get("BUGFIX_CONFIG_DIR") or str(Path.home() / ".bugfix-flow")
-    py = os.environ.get("CIT_BUGFLOW_PYTHON") or sys.executable
+    py = _prefer_venv_python()
+    launch = str(LAUNCH.resolve())
 
     servers = {}
     for name in SERVERS:
         servers[f"{name}-mcp"] = {
             "type": "stdio",
             "command": py,
-            "args": [str(LAUNCH), name],
+            "args": [launch, name],
             "env": {
                 "BUGFIX_CONFIG_DIR": cfg_dir,
                 "CIT_WORKFLOW_ROOT": str(REPO),
@@ -51,9 +64,10 @@ def main() -> int:
     print(f"已写入 {OUT}")
     print(f"python={py}")
     print(f"repo={REPO}")
-    print("提示: 绝对路径版适合本机；分享远程仓库请保留相对路径版或重新生成。")
+    print("下一步: 完全退出 Cursor / 新开 cursor-agent 会话，再 /citfix。")
+    print("共享仓提交前如需相对路径模板，可从 git 还原 .cursor/mcp.json。")
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())
