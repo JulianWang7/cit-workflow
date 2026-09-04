@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0",
+  "project_name": "SLB783 - Android14",
+  "code_root": "/home2/wanglingqi/Workspace/SLB783/LA.UM.12.2.1/",
+  "cit_source_root": "/home2/wanglingqi/Workspace/MeiGLink/cit3.0",
+  "cit_lineage": "cit3",
+  "cit_apk_policy": "prebuilt_cit3",
+  "cit_prebuilt_apk": "vendor/meig/apps/cit/CITTest/cit.apk",
+  "cit_config_paths": [
+    "vendor/meig/apps/cit/etc/"
+  ],
+  "compile_framework": "scripts/compile",
+  "device_serial": "cl12345678",
+  "server": "110",
+  "meiglink_root": "/home2/wanglingqi/Workspace/MeiGLink",
+  "meiglink_modifiable": false,
+  "repo_branches": [
+    {
+      "tree": "code",
+      "path": "/home2/wanglingqi/Workspace/SLB783/LA.UM.12.2.1/",
+      "branch": "SLB783_wanglingqi",
+      "head": "05f01a7efc5e03a5e7576a0b3546ef02ec362665"
+    },
+    {
+      "tree": "cit",
+      "path": "/home2/wanglingqi/Workspace/MeiGLink/cit3.0",
+      "branch": "",
+      "head": ""
+    }
+  ]
+}

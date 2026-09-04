@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0",
+  "plan_date": "20260903",
+  "problems": [
+    {
+      "schema_version": "1.0",
+      "description": "【CIT】主副MIC测试85db就能通过，测试要求达到88db 3/3",
+      "zentao_id": "81097",
+      "project_name": "SLB783 - Android14",
+      "status": "active",
+      "analysis_conclusion_path": "runs/CIT-20260901-81097/07_analysis/output/root_cause_81097.json",
+      "updated": "2026-09-03T20:35:47+08:00"
+    }
+  ],
+  "updated": "2026-09-03T20:35:47+08:00"
+}

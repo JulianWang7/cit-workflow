@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "project_name": "MT5825",
+  "updated": "2026-09-03T10:40:17+08:00",
+  "problems": [
+    {
+      "zentao_id": "97203",
+      "status": "active",
+      "description": "【CIT】SAR传感器概率不通过 1/3",
+      "path": "problems/97203.json",
+      "updated": "2026-09-03T10:40:17+08:00"
+    }
+  ]
+}
