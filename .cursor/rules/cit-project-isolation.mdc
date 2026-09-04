@@ -1,0 +1,34 @@
+---
+description: "cit-workflow 隔离：禁止用户级 skill；仅用仓内 skill + 项目 MCP（cit_mcp_launch）"
+alwaysApply: true
+---
+
+# cit-workflow 能力隔离（强制）
+
+本仓库会话（含 Cursor CLI `--workspace` 指向本仓）适用：
+
+## Skill
+
+| 允许 | 禁止 |
+|------|------|
+| `.cursor/skills/citfix/` | `~/.cursor/skills/bugfix-*` |
+| `.cursor/skills/cit-context-prepare/` | `~/.cursor/skills/**` 下任何非本仓 skill |
+| `.cursor/skills/cit-plan-bank/` | 任何「加载 bugfix-analyze/modify/…」指令 |
+| `.cursor/skills/cit-analyze/` 等 `cit-*` | 用户全局 subsystem skills |
+
+发现协议或 handoff 仍写 `bugfix-*` 时，**改读同名 `cit-*` 项目 skill**，不得去用户目录加载。
+
+## MCP
+
+| 允许 | 禁止 |
+|------|------|
+| 本仓 `.cursor/mcp.json` → `scripts/cit_mcp_launch.py` → `mcp/*.py` | 启动路径含 `android-bugfix-flow` 的用户级 MCP |
+| 工具名仍为 `zentao_*` / `set_workspace` 等（由仓内 server 提供） | 假定用户级与项目级是同一进程 |
+
+若同名 MCP 同时出现，**只使用命令行含 `cit_mcp_launch.py` 的实例**。
+
+## 编排
+
+- 入口：`/citfix` → 项目 skill `citfix`
+- `scripts/citfix.py` 仅同步 auto 段状态，**不**替代 Agent 段，也**不**调用用户 skill
+- 07+ 正式产物写在 `cit-workflow/runs/<run_id>/<stage>/output/`；中间镜像 `runs_work/projects/<PRODUCT>/runs/<run_id>/`

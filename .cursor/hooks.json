@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "type": "command",
+        "command": "python .cursor/hooks/cit_session_start.py",
+        "timeout": 30
+      }
+    ]
+  }
+}

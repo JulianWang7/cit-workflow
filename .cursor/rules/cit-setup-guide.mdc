@@ -1,0 +1,64 @@
+---
+description: "CIT 首次配置向导：检测依赖与 MCP，收集禅道/SSH 凭据并写入本地配置（不入库）"
+globs: ""
+alwaysApply: false
+---
+
+# cit-setup — CIT 工作流首次配置
+
+当用户要「配置 CIT 环境 / cit-setup / 新电脑初始化 cit-workflow」时按本规则执行。
+
+## 步骤 1：全量扫描
+
+1. 确认仓内已有 `mcp/*.py` 与 `bugflow/`（本仓内嵌，不必外挂 BUGFLOW_ROOT）
+2. 检查：`BUGFIX_CONFIG_DIR`（默认 `~/.bugfix-flow`）、`python -c "import bugflow"`、`pip show mcp`
+3. 确认 `.cursor/mcp.json` 注册了五个 `*-mcp`（经 `scripts/cit_mcp_launch.py`）
+4. 调用 `config_status()`（misc-mcp）；可选查 `adb version` / `rg --version`
+
+打印 ✅/⚠️/❌ 状态表。
+
+## 步骤 2：依赖与环境变量（AI 给命令，用户本机执行）
+
+```powershell
+cd <cit-workflow>
+python -m pip install -r requirements-mcp.txt
+[Environment]::SetEnvironmentVariable("BUGFIX_CONFIG_DIR", "$env:USERPROFILE\.bugfix-flow", "User")
+```
+
+相对路径 MCP 启动失败时：`python scripts/cit_render_mcp_json.py`（生成绝对路径版，勿提交）。
+
+## 步骤 3：凭据配置（弹窗 → config_save）
+
+对 `config_status` 的 ⚠️ 项：
+
+### 3a 禅道（必须）
+
+`config_save(config_type="zentao", data={user, password, mcp_token, mcp_secret})`  
+`base_url` 按团队约定补全，勿把真实 token 写进仓库文档。
+
+### 3b SSH servers（必须，本阶段做源码定位）
+
+`config_save(config_type="servers", data={name, user, key_file|password})`
+
+### 3c MeiGLink 外部源码（CIT 强烈建议）
+
+`config_save(config_type="external_source", data={repo_key:"meiglink", server, path})`
+
+### 3d 可选
+
+LLM / Gerrit / Wiki / KB：可跳过，不阻塞「上下文快照」阶段。
+
+## 步骤 4：验证
+
+再跑 `config_status()`。必须项（禅道 + SSH）全 ✅ 后提示：
+
+> 配置完成。本仓 MCP 已内嵌，无需 BUGFLOW_ROOT。可执行 cit-prepare / 加载 skill `cit-context-prepare`。  
+> 公司推广清单见 `docs/cit-company-rollout.md`。
+
+并用 `python scripts/cit_smoke_context_prepare.py` 验证本仓库产物门禁（不依赖真机）。
+
+## 约束
+
+1. 用 `config_save` 写配置；禁止把密码/token 提交到 git
+2. 幂等：已 ✅ 项不重复弹窗
+3. MCP 源码已在本仓 `mcp/` + `bugflow/`；上游同步方式见 `docs/cit-mcp-reference.md`

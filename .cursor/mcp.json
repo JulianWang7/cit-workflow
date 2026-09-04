@@ -1,0 +1,88 @@
+{
+  "mcpServers": {
+    "ssh-mcp": {
+      "type": "stdio",
+      "command": "D:\\Workspace\\cit-workflow\\.venv\\Scripts\\python.exe",
+      "args": [
+        "D:\\Workspace\\cit-workflow\\scripts\\cit_mcp_launch.py",
+        "ssh"
+      ],
+      "env": {
+        "BUGFIX_CONFIG_DIR": "C:\\Users\\Administrator\\.bugfix-flow",
+        "CIT_WORKFLOW_ROOT": "D:\\Workspace\\cit-workflow",
+        "BUGFLOW_ROOT": "D:\\Workspace\\cit-workflow",
+        "PYTHONPATH": "D:\\Workspace\\cit-workflow"
+      }
+    },
+    "adb-mcp": {
+      "type": "stdio",
+      "command": "D:\\Workspace\\cit-workflow\\.venv\\Scripts\\python.exe",
+      "args": [
+        "D:\\Workspace\\cit-workflow\\scripts\\cit_mcp_launch.py",
+        "adb"
+      ],
+      "env": {
+        "BUGFIX_CONFIG_DIR": "C:\\Users\\Administrator\\.bugfix-flow",
+        "CIT_WORKFLOW_ROOT": "D:\\Workspace\\cit-workflow",
+        "BUGFLOW_ROOT": "D:\\Workspace\\cit-workflow",
+        "PYTHONPATH": "D:\\Workspace\\cit-workflow"
+      }
+    },
+    "zentao-mcp": {
+      "type": "stdio",
+      "command": "D:\\Workspace\\cit-workflow\\.venv\\Scripts\\python.exe",
+      "args": [
+        "D:\\Workspace\\cit-workflow\\scripts\\cit_mcp_launch.py",
+        "zentao"
+      ],
+      "env": {
+        "BUGFIX_CONFIG_DIR": "C:\\Users\\Administrator\\.bugfix-flow",
+        "CIT_WORKFLOW_ROOT": "D:\\Workspace\\cit-workflow",
+        "BUGFLOW_ROOT": "D:\\Workspace\\cit-workflow",
+        "PYTHONPATH": "D:\\Workspace\\cit-workflow"
+      }
+    },
+    "kb-mcp": {
+      "type": "stdio",
+      "command": "D:\\Workspace\\cit-workflow\\.venv\\Scripts\\python.exe",
+      "args": [
+        "D:\\Workspace\\cit-workflow\\scripts\\cit_mcp_launch.py",
+        "kb"
+      ],
+      "env": {
+        "BUGFIX_CONFIG_DIR": "C:\\Users\\Administrator\\.bugfix-flow",
+        "CIT_WORKFLOW_ROOT": "D:\\Workspace\\cit-workflow",
+        "BUGFLOW_ROOT": "D:\\Workspace\\cit-workflow",
+        "PYTHONPATH": "D:\\Workspace\\cit-workflow"
+      }
+    },
+    "misc-mcp": {
+      "type": "stdio",
+      "command": "D:\\Workspace\\cit-workflow\\.venv\\Scripts\\python.exe",
+      "args": [
+        "D:\\Workspace\\cit-workflow\\scripts\\cit_mcp_launch.py",
+        "misc"
+      ],
+      "env": {
+        "BUGFIX_CONFIG_DIR": "C:\\Users\\Administrator\\.bugfix-flow",
+        "CIT_WORKFLOW_ROOT": "D:\\Workspace\\cit-workflow",
+        "BUGFLOW_ROOT": "D:\\Workspace\\cit-workflow",
+        "PYTHONPATH": "D:\\Workspace\\cit-workflow"
+      }
+    },
+    "citfix-mcp": {
+      "type": "stdio",
+      "command": "D:\\Workspace\\cit-workflow\\.venv\\Scripts\\python.exe",
+      "args": [
+        "D:\\Workspace\\cit-workflow\\scripts\\cit_mcp_launch.py",
+        "citfix"
+      ],
+      "env": {
+        "BUGFIX_CONFIG_DIR": "C:\\Users\\Administrator\\.bugfix-flow",
+        "CIT_WORKFLOW_ROOT": "D:\\Workspace\\cit-workflow",
+        "BUGFLOW_ROOT": "D:\\Workspace\\cit-workflow",
+        "PYTHONPATH": "D:\\Workspace\\cit-workflow"
+      }
+    }
+  }
+}

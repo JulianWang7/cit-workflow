@@ -1,0 +1,65 @@
+---
+description: "CIT 环境准备：从禅道拉取 Bug、绑定 workspace、生成本地上下文快照与会话提示词"
+globs: ""
+alwaysApply: false
+---
+
+# cit-prepare — CIT 任务接入与环境准备
+
+当用户要执行「CIT 环境准备 / 上下文快照 / cit-prepare / 拉禅道准备 CIT」时按本规则推进。
+MCP 工具名保持公共约定（`zentao_*` / `set_workspace` / `config_*`），勿改名。
+
+## 调用方式
+
+1. `cit-prepare` — 参数不全时逐步收集
+2. `cit-prepare 97203` — 仅 Bug ID，其余交互选择
+3. `cit-prepare --bug-id 97203 --server 110 --code-root /path [--device-serial SERIAL]`
+
+## 执行步骤
+
+### 步骤 1：解析参数
+
+解析 `--bug-id`、`--server`、`--code-root`、`--device-serial`、`--meiglink-root`（可选）、`--run-id`（可选）。
+第一个纯数字位置参数视为 bug-id。记录已有/缺失项。
+
+### 步骤 2：补齐缺失参数
+
+先调 `config_status()`，优先复用已保存 workspace。
+
+| 缺失项 | 做法 |
+|--------|------|
+| Bug ID | 询问；或 `zentao_my_bugs()` 后让用户选 |
+| 服务器 | `config_status` / `servers.yaml` 列表；仅一台可直选 |
+| 代码根目录 | `set_workspace(server=...)` 后远程发现路径，或用上次 `code_root` |
+| 设备序列号 | 可选；多机时再问；无人值守缺省则标 ⚠️ 不阻塞本阶段 |
+
+### 步骤 3：拉禅道并绑定工作区
+
+1. `zentao_get_bug(bug_id=...)`
+2. 有附件则 `zentao_download_attachment`；记录本地路径与 size
+3. `set_workspace(server=..., code_root=..., device_serial=...)`（serial 可选）
+4. CIT 识别：标题或内容含 `CIT` / `【CIT】` → 读 skill `cit-context-prepare/cit_guide.md`，解析 MeiGLink / cit3.0|cit4 路径（可写 `config_save` external_source）
+
+### 步骤 4：写上下文快照（本仓库真源）
+
+在仓库内写入（勿写死本机绝对路径进模板）：
+
+```text
+runs/<run_id>/06_context_snapshot/output/
+  workspace.json
+  context.json
+  task_ref.json          # 禅道归一化摘要
+```
+
+`run_id` 缺省：`CIT-<YYYYMMDD>-<bug_id>`。字段约定见 `docs/cit-env-and-context.md`。
+写完后跑：`python scripts/cit_smoke_context_prepare.py --run-dir runs/<run_id>`。
+
+### 步骤 5：输出会话提示词
+
+给用户一段可粘贴的 CIT 会话提示词：bug 标题/步骤、workspace 绑定、CIT 源码路径提示、下一步（分析前需 `gates.ready_for_analyze`）。
+
+## 约束
+
+- MCP 实现位于本仓 `mcp/` + `bugflow/`，经 `.cursor/mcp.json` 启动
+- 密钥只存在 `BUGFIX_CONFIG_DIR`（默认 `~/.bugfix-flow`），禁止写入 `runs/` 或 git
+- 本阶段不进入 reproduce/analyze 改码；只做到上下文冻结
