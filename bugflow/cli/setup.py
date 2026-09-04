@@ -142,11 +142,11 @@ def check_llm_yaml() -> CheckResult:
             return CheckResult(
                 "LLM 配置", True,
                 "llm.yaml 不存在，回退到 ~/.zcode/v2/config.json",
-                f"（可选）cp config/llm.yaml.example {p}  配置专用 LLM",
+                "（可选）在 BUGFIX_CONFIG_DIR 下自建 llm.yaml 配置专用 LLM",
             )
         return CheckResult(
             "LLM 配置", False, "llm.yaml 和 ZCode config.json 都不存在",
-            f"cp config/llm.yaml.example {p}  或在 ZCode 中配置 provider",
+            "在 BUGFIX_CONFIG_DIR 自建 llm.yaml，或在 ZCode 中配置 provider",
         )
     try:
         import yaml

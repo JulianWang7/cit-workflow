@@ -19,9 +19,16 @@ import subprocess
 from bugflow.core.ssh import ssh_exec, SSHError
 
 
-# commit message 格式校验（禅道docID=120）
-# 格式: <BugID|TaskID> [Description] 根因简述 [Solution] 修改简述
-_COMMIT_MSG_RE = re.compile(r"^\d+\s+\[Description\].+\[Solution\].+")
+# commit message 格式校验
+# 旧（禅道 docID=120）: <BugID> [Description] … [Solution] …
+# 新（cit-workflow 过渡）: [Product][BugID|TaskID]<id>[Description]…[Solution]…
+_COMMIT_MSG_RE = re.compile(
+    r"^(?:"
+    r"\d+\s+\[Description\].+\[Solution\].+"
+    r"|"
+    r"\[[^\]]+\]\[(?:BugID|TaskID)\]\S+\[Description\].+\[Solution\].+"
+    r")$"
+)
 
 
 def _is_local_path(path: str) -> bool:
@@ -126,7 +133,7 @@ def commit(
     - ec=1 + "nothing to commit"/"nothing added to commit" → 无改动（success=True, nothing_to_commit=True）
     - 其他 → 失败
     """
-    # ── commit message 格式校验（禅道docID=120）──
+    # ── commit message 格式校验（兼容旧 docID=120 + cit 新格式）──
     first_line = message.strip().split("\n")[0]
     if not _COMMIT_MSG_RE.match(first_line):
         return {
@@ -134,11 +141,12 @@ def commit(
             "validation_error": True,
             "nothing_to_commit": False,
             "output": (
-                "commit message 格式不符合规范（禅道docID=120）。\n"
-                "要求: <BugID> [Description] 根因简述 [Solution] 修改简述\n"
-                "示例: 94250 [Description] HCI超时导致BT崩溃 [Solution] ASSERT_LOG改为LOG_ERROR\n"
-                "注意: 首行≤72字符，不要手写 Change-Id（hook 自动生成）\n"
-                f"你的首行: {first_line[:80]}"
+                "commit message 格式不符合规范。\n"
+                "CIT 过渡格式: [Product][BugID|TaskID]<id>[Description]<根因>[Solution]<修改>\n"
+                "示例: [SLB783][BugID]81097[Description]MIC阈值偏低[Solution]阈值85改88\n"
+                "旧格式(仍兼容): <BugID> [Description] … [Solution] …\n"
+                "注意: 不要手写 Change-Id（hook 自动生成）\n"
+                f"你的首行: {first_line[:100]}"
             ),
             "exit_code": -1,
         }

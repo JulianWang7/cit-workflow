@@ -586,6 +586,12 @@ def search_bugs(
     return data.get("bugs", []) or [], int(data.get("total", 0) or 0)
 
 
+def configured_user() -> str:
+    """当前 zentao.yaml 中的登录账号（assignedTo 比对用）。"""
+    _load_cfg()
+    return str(_zt_user or "").strip()
+
+
 def my_bugs(limit: int = 20) -> list[dict]:
     """查询指派给我的未解决 Bug。"""
     _load_cfg()
@@ -594,6 +600,33 @@ def my_bugs(limit: int = 20) -> list[dict]:
         {"person": _zt_user, "status": "active", "limit": limit, "page": 1},
     )
     return data.get("bugs", []) if isinstance(data, dict) else []
+
+
+def my_bugs_all(page_size: int = 100, max_pages: int = 20) -> list[dict]:
+    """分页拉取指派给当前用户的全部 active Bug。"""
+    _load_cfg()
+    out: list[dict] = []
+    for page in range(1, max_pages + 1):
+        bugs, total = search_bugs(
+            "",
+            limit=page_size,
+            status="active",
+            page=page,
+            person=_zt_user,
+        )
+        if not bugs:
+            break
+        out.extend(bugs)
+        if len(out) >= total or len(bugs) < page_size:
+            break
+    return out
+
+
+def list_products(limit: int = 100) -> list[dict]:
+    """获取禅道产品列表（结构化）。"""
+    data = _mcp_tool_call("zentao_products_list", {"limit": limit, "page": 1})
+    products = data.get("products", []) if isinstance(data, dict) else []
+    return list(products) if isinstance(products, list) else []
 
 
 def search_bugs_formatted(
