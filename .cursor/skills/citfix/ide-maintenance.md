@@ -9,7 +9,7 @@
 - 「完善 citfix 引擎 / 阶段 / pipeline」
 - 「给 09 阶段加 JSON 模板」
 - 「citfix.py 和 Skill 行为不一致」
-- 「修复 tests/citfix 单测」
+- 「修复 citfix 单测」
 
 ## 非触发（仍走 Agent 主场景）
 
@@ -21,21 +21,22 @@
 
 | 路径 | 用途 |
 |------|------|
-| `tests/citfix/` | 引擎、阶段 executor |
-| `workflow/citfix_pipeline.json` | 阶段契约 |
+| `citfix/` | 引擎、阶段 executor |
+| `tests/test_citfix_*.py` | 单测 |
+| `contracts/citfix_pipeline.json` | 阶段契约 |
 | `scripts/citfix.py` | 状态同步 CLI |
 | `.cursor/skills/citfix/` | Skill 本体 |
 | `docs/citfix-*.md` | 设计文档 |
 
 ## 禁止
 
-- 把业务调试产物写入 `cit-workflow/runs/` 作为最终真源（测试床在 `cit-workflow-test`）
-- 在 `cit-workflow-test` 根目录堆临时 `.py`（辅助脚本放 `cit-workflow/tests/`）
-- 修改 `cit-workflow-test` 内已有 run 产物，除非用户点名修复测试数据
+- 混淆路径角色：正式产物必须进 `cit-workflow/runs/<PRODUCT>/<run_id>/`；中间产物（logs/brief/_rejected）进 `runs_work/projects/<PRODUCT>/runs/<run_id>/`
+- 在 `runs_work` 根目录堆临时 `.py`（辅助脚本放 `cit-workflow/tests/` / `scripts/`）
+- 修改已有 run 产物，除非用户点名修复测试数据或运行规定脚本落盘
 
 ## 输出规范
 
-1. **代码**：符合现有 `tests/citfix` 风格；类型注解；无 inline import
+1. **代码**：符合现有 `citfix/` 风格；类型注解；无 inline import
 2. **pipeline.json**：新阶段必须补 `kb_doc` / `kb_file` / `required_outputs`
 3. **Skill**：主入口仍 Agent-first；脚本降级为「可选同步」
 4. **文档**：行为变更同步 `docs/citfix-skill-design.md`
@@ -44,6 +45,7 @@
 
 ```powershell
 cd D:\Workspace\cit-workflow
+.\.venv\Scripts\python.exe -m unittest tests.test_citfix_gates -v
 .\.venv\Scripts\python.exe scripts\cit_smoke_context_prepare.py
 .\.venv\Scripts\python.exe scripts\citfix.py 97203 --status
 ```

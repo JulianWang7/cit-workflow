@@ -9,13 +9,13 @@
 D:\Workspace\cit-workflow\     ← --workspace 指向此目录
   .cursor/skills/citfix/       ← Skill 自动发现
   .cursor/mcp.json             ← MCP 注册
-  workflow/citfix_pipeline.json
+  contracts/citfix_pipeline.json
 ```
 
 测试床（只读/写产物，非 workspace 也行，但 Agent 需能 Read）：
 
 ```text
-D:\Workspace\cit-workflow-test\
+D:\Workspace\cit-workflow\runs_work\
 ```
 
 ## 2. 启动命令示例
@@ -25,7 +25,7 @@ D:\Workspace\cit-workflow-test\
 ```powershell
 cd D:\Workspace\cit-workflow
 
-cursor agent --workspace . "/citfix 97203 --resume"
+cursor-agent --workspace . "/citfix 97203 --resume"
 ```
 
 等价自然语言 prompt：
@@ -38,15 +38,30 @@ Follow agent-protocol.md. Stop at checkpoint with full report.
 ### 恢复已有 CLI 线程
 
 ```powershell
-# 列出历史线程（以本机 Cursor CLI 实际子命令为准）
-cursor agent ls
+# 列出历史线程（以本机 cursor-agent 实际子命令为准）
+cursor-agent ls
 
 # 恢复
-cursor agent --workspace D:\Workspace\cit-workflow --resume <thread-id> ^
+cursor-agent --workspace D:\Workspace\cit-workflow --resume <thread-id> ^
   "Continue citfix for bug 97203. Read workflow_state.json first."
 ```
 
-> **说明**：Cursor CLI 子命令随版本可能为 `cursor agent` / `cursor chat`；以本机 `cursor --help` 为准。核心不变：**workspace = cit-workflow**，**首句携带 /citfix**。
+> **说明**：本机正确入口为 **`cursor-agent`**（不是 `cursor agent`）。核心不变：**workspace = cit-workflow**，**首句携带 /citfix**。
+
+### 2.1 MCP 未加载时（「SSH MCP isn't loaded」）
+
+Agent 若报 MCP 未加载并改口「via bugflow SSH」——**视为卡点，不是可接受降级**（关闭路径除外，见协议 §0.1）。
+
+本机修复顺序：
+
+```powershell
+cd D:\Workspace\cit-workflow
+.\.venv\Scripts\python.exe scripts\cit_smoke_mcp.py --render
+# 完全退出 Cursor，或新开 CLI 会话（旧会话常不重载 MCP）
+cursor-agent --workspace D:\Workspace\cit-workflow "/citfix <bug_id> --resume"
+```
+
+确认会话内可调用 `set_workspace` / `search_code_tool`。详见 `docs/cit-mcp-reference.md` §8。
 
 ## 3. 上下文传递
 
@@ -61,15 +76,16 @@ cursor agent --workspace D:\Workspace\cit-workflow --resume <thread-id> ^
 
 **不要**依赖 CLI 会话内存作为唯一真源；文件 state 为准。
 
-## 4. 与 monitoring 脚本配合（可选）
+## 4. 与调度器配合（已落地）
 
-`cit-workflow/monitoring/` 下 APScheduler 脚本可：
+监督者代码：`citfix/watch/` + `scripts/cit_watch_once.py` / `cit_watch_run.py`（见 EXP-CIT-010）。
 
-1. 读 `workflow_state.json` 的 `workflow_status`
-2. 若 `blocked` 超过阈值，向 CLI 注入：`/citfix {bug_id} --resume`
-3. 若 `completed`，停止推送
+1. 定时读 `workflow_status` / `updated_at` / `stages.*.status`
+2. 僵死或 blocked 过久 → 快照 + 注入 `/citfix {bug_id} --resume`（默认 dry-run）
+3. `completed` / claim-only / `CIT-BATCH-*` 不督促
+4. escalate → `14_closure/.../notifications/watch_escalate_*.json`
 
-Skill 不实现调度；调度器只发 **/citfix** 口令，由 Agent 执行 Skill 协议。
+配置：`config/citfix/watch.yaml`（从 `watch.yaml.example` 复制）。Skill 仍不实现调度；调度器只发 **/citfix** 口令。
 
 ## 5. 退出码（仅当 Agent 调用 citfix.py 时）
 
@@ -84,8 +100,8 @@ Agent 在 IDE 内**不必**向用户展示退出码，应翻译为卡点四要�
 ## 6. 示例：无人值守一轮
 
 ```powershell
-cursor agent --workspace D:\Workspace\cit-workflow --force ^
+cursor-agent --workspace D:\Workspace\cit-workflow --force ^
   "citfix skill: /citfix 97203 --resume. Max one stage per turn. If blocked, write CHECKPOINT.md and stop."
 ```
 
-适合 monitoring 定时触发。
+适合定时调度触发（APScheduler 等）。

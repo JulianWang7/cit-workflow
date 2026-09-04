@@ -1,73 +1,44 @@
 # citfix 阶段对照表
 
-与 `workflow/citfix_pipeline.json` 及 EXP-CIT-004～011 对齐。  
-测试床根目录：`D:\Workspace\cit-workflow-test`
+与 `contracts/citfix_pipeline.json` 及 **现行门禁契约** `docs/citfix-stage-gates.md` 对齐。
 
-| Stage ID | 目录 | KB | Executor | 主要 output |
-|----------|------|-----|----------|-------------|
-| 00_run_registry | `00_runs/<run_id>/` | EXP-CIT-004 | auto | `workflow_state.json`, `run.json` |
-| 01_req_parse | `01_req_parse/` | EXP-CIT-005 | skip（/citfix 直连） | — |
-| 02_bug_task_extract | `02_bug_task_extract/` | EXP-CIT-005 | skip | — |
-| 03_zentao_fetch | `03_zentao_fetch/` | EXP-CIT-005 | auto | `output/zentao_fetch_results.json` |
-| 04_result_normalize | `04_result_normalize/` | EXP-CIT-005 | auto | `output/tasks.json` |
-| 05_cursor_handoff | `05_cursor_handoff/` | EXP-CIT-005 | auto | `output/cursor_handoff_bundle.json` |
-| 06_context_snapshot | `06_context_snapshot/` | EXP-CIT-005 | auto+agent | `output/{task_ref,workspace,context}.json` |
-| 06b_plan_bank | `plan_bank/<PROJECT>/` | EXP-CIT-005 | auto | `project_info.json`, `plan_*/plans.json` |
-| 07_analysis | `07_analysis/` | EXP-CIT-006 | **agent** | `output/root_cause_{bug_id}.json` |
-| 08_changes | `08_changes/` | EXP-CIT-006 | **agent** | `output/change_{bug_id}.json` |
-| 09_jenkins_build | `09_jenkins_build/` | EXP-CIT-007 | **agent** | `output/build_{bug_id}.json` |
-| 10_artifacts | `10_artifacts/` | EXP-CIT-007 | **agent** | `output/artifact_{bug_id}.json` |
-| 11_qfil_flash | `11_qfil_flash/` | EXP-CIT-008 | **agent** | `output/flash_{bug_id}.json` |
-| 12_cit_test | `12_cit_test/` | EXP-CIT-009 | **agent** | `output/result_{bug_id}.json` |
-| 13_human_gate | `13_human_gate/` | EXP-CIT-009 | **agent** | `output/human_gate_{bug_id}.json` |
-| 14_closure | `14_closure/` | EXP-CIT-011 | **agent** | `output/closure_{bug_id}.json` |
+> **[LEGACY-DESIGN 2026-08-29，非现行契约]** 下表若仍提到 EXP-CIT-*，仅作历史索引；评审与改码以代码 + `citfix-stage-gates.md` 为准。
 
-## KB 文档路径
+| 类型 | 根目录 |
+|------|--------|
+| **正式产物** | `D:\Workspace\cit-workflow\runs\<PRODUCT>\<run_id>\` |
+| **中间产物** | `D:\Workspace\cit-workflow\runs_work\projects\<PRODUCT>\runs\<run_id>\` |
 
-根目录：
+| Stage ID | 正式目录 | 契约 | Executor | 主要 output |
+|----------|----------|------|----------|-------------|
+| 00_run_registry | `cit-workflow/runs/<PRODUCT>/<run_id>/` | stage-gates | auto | `workflow_state.json`, `run.json` |
+| 01_req_parse | `runs/<PRODUCT>/<batch_id>/01_req_parse/`（单 bug skip） | stage-gates | **auto** + cit-req-parse | `candidate_rows.json`（`CANDIDATE_ROWS_READY`） |
+| 02_bug_task_extract | `…/02_bug_task_extract/`；中间另有 `batches/<id>/` | stage-gates | **auto** + cit-bug-extract | `bug_ids.json`（`BUG_IDS_READY`，串行队列） |
+| 03_zentao_fetch | `…/03_zentao_fetch/` | stage-gates | auto | `output/zentao_fetch_results.json` |
+| 04_result_normalize | `…/04_result_normalize/` | stage-gates | auto | `output/tasks.json`（含 `verification`） |
+| 05_cursor_handoff | `…/05_cursor_handoff/` | stage-gates | auto | `output/cursor_handoff_bundle.json` |
+| 06_context_snapshot | `…/06_context_snapshot/` | stage-gates | auto | `context.json`（`routing.verify_mode`） |
+| 06b_plan_bank | `plan_bank/<PRODUCT>/` | stage-gates | auto | `project_info.json`, `index.json`, `problems/<id>.json` |
+| 07_analysis | `…/07_analysis/` | stage-gates | **agent** + cit-analyze | `root_cause_{bug_id}.json` |
+| 08_changes | `…/08_changes/` | stage-gates | **agent** + cit-modify → cit-review | `change_{bug_id}.json` |
+| 09_jenkins_build | `…/09_jenkins_build/` | stage-gates | **agent** + cit-compile | `build_{bug_id}.json` |
+| 10_artifacts | `…/10_artifacts/` | stage-gates | **agent** + cit-artifacts | `artifact_{bug_id}.json` |
+| 11_qfil_flash | `…/11_qfil_flash/` | stage-gates | **agent** + cit-flash | `flash_{bug_id}.json` |
+| 12_cit_test | `…/12_cit_test/` | stage-gates | **agent** + cit-reproduce → cit-verify | `result_{bug_id}.json` |
+| 13_human_gate | `…/13_human_gate/` | stage-gates | **agent** + cit-human-gate | `human_gate_{bug_id}.json` |
+| 14_closure | `…/14_closure/` | stage-gates | **agent** + cit-submit | `closure_{bug_id}.json`（`CLOSURE_DONE`） |
 
-```text
-D:\Workspace\GDocuments\embedded-workflow-lab\knowledge-base\topics\cit\cit-automation-pipeline\
-```
+## 13_human_gate 完成语义
 
-文件名模式：`EXP-CIT-0XX-*.md`（见 pipeline.json 的 `kb_file` 字段）。
+| `routing.verify_mode` | 允许的 `gate_status` |
+|-----------------------|----------------------|
+| `auto` | `not_required` \| `auto_bypassed` |
+| `human` / `hybrid` | `approved`（须 `approved_by`） |
+| 任意 | `pending_human` → **blocked**，不得进 14 |
 
-## Agent 段 output JSON 最低字段
+人工项 registry：`config/citfix/human_case_registry/<PRODUCT>.json`（运行时真源）。  
+AI 提案：`04/.../intermediate/human_case_proposal.json` → `scripts/cit_human_case_approve.py`。
 
-### root_cause_{bug_id}.json
+## Agent 段字段
 
-```json
-{
-  "schema_version": "1.0",
-  "bug_id": "97203",
-  "run_id": "...",
-  "root_cause": "...",
-  "evidence_paths": [],
-  "recommended_fix": "...",
-  "analyzed_at": "ISO8601"
-}
-```
-
-### change_{bug_id}.json
-
-```json
-{
-  "schema_version": "1.0",
-  "bug_id": "97203",
-  "files_changed": [],
-  "patch_summary": "",
-  "review_status": "pending|pass|fail"
-}
-```
-
-其他阶段占位结构见各阶段测试床已有样例（如 `closure_97203.json`）。
-
-## plan_bank（06b）
-
-```text
-cit-workflow/plan_bank/<PROJECT>/
-  project_info.json
-  plan_<YYYYMMDD>/plans.json
-```
-
-英文字段；`analysis_conclusion_path` 在分析完成后回写 `plans.json`。
+详见 `docs/citfix-stage-gates.md`；引擎强制：`citfix/stages/` → `_validate_agent_output`。
