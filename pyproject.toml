@@ -18,10 +18,11 @@ dependencies = [
 
 [project.optional-dependencies]
 mcp = ["mcp>=1.29,<2"]
+watch = ["apscheduler>=3.10,<4"]
 dev = ["pytest>=7.0"]
 
 [tool.setuptools.packages.find]
-include = ["bugflow*"]
+include = ["bugflow*", "citfix*"]
 
 [tool.setuptools]
 py-modules = []

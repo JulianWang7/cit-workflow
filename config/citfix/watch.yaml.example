@@ -1,0 +1,48 @@
+# citfix watch — cross-cutting supervisor (APScheduler + JSON). See EXP-CIT-010.
+schema_version: "1.0"
+
+# Cursor CLI workspace (cit-workflow root). Empty = auto from package location.
+workspace: ""
+
+# CLI binary / argv prefix. dry_run=true only logs the command (safe default).
+# 本机正确入口是 cursor-agent（不是 "cursor agent"）
+cursor_bin: "cursor-agent"
+cursor_args: ["--workspace"]
+nudge_dry_run: true
+# If set, append --resume <thread_id> when watch_state.thread_id is present
+use_thread_resume: true
+
+scan_runs_seconds: 60
+scan_batches_seconds: 120
+scan_retry_seconds: 30
+
+# Stall: no updated_at change while running/blocked
+stall_timeout_seconds:
+  default: 1200
+  "07_analysis": 1200
+  "09_jenkins_build": 14400
+  "10_artifacts": 3600
+  "11_qfil_flash": 1800
+  "12_cit_test": 7200
+  "13_human_gate": 86400
+  "14_closure": 1800
+
+# blocked without resume
+blocked_nudge_after_seconds: 600
+
+# Whole-run wall clock from first watch observation (optional; 0=off)
+run_wall_clock_max_seconds: 86400
+
+retry:
+  nudge_max: 3
+  infra_max: 3
+  product_max: 3
+  # seconds between nudges by nudge_count index
+  nudge_backoff_seconds: [120, 300, 900]
+  infra_backoff_seconds: [5, 20, 60]
+
+batch:
+  item_running_timeout_seconds: 3600
+
+# Write escalate notices under run 14_closure/output/notifications when possible
+escalate_file_notify: true
