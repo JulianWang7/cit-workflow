@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "description": "citfix outbox channels. file=always-on local notify; webhook/wecom opt-in.",
+  "channels": {
+    "file": {
+      "enabled": true,
+      "note": "Writes 14_closure/output/notifications/*.json"
+    },
+    "webhook": {
+      "enabled": false,
+      "url": "",
+      "note": "POST JSON {source,event} when enabled"
+    },
+    "wecom": {
+      "enabled": false,
+      "webhook_url": "",
+      "note": "Enterprise WeChat robot webhook; text message"
+    }
+  }
+}

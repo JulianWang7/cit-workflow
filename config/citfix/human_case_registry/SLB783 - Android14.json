@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "product": "SLB783 - Android14",
+  "default_execution": "auto",
+  "cases": [
+    {
+      "case_id": "mic_loopback_main_sub",
+      "match": {
+        "title_regex": "主副\\s*MIC|RecordPlaySub|loopbacktest_max",
+        "class": "com.cit.modules.mic.RecordPlaySubModuleTest"
+      },
+      "execution": "human",
+      "reason": "calibrated_sound_source_ui",
+      "updated_by": "citfix-bootstrap",
+      "updated_at": "2026-09-02"
+    }
+  ]
+}
