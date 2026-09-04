@@ -1,0 +1,139 @@
+{
+  "schema_version": "1.0",
+  "description": "Build Router：按改动路径选择 build_mode / deploy_mode；可扩展多项目规则。",
+  "default_project": "SLB783 - Android14",
+  "priority": "first_match",
+  "rules": [
+    {
+      "id": "forbid_meiglink_cit_source",
+      "when": {
+        "path_glob_any": [
+          "**/MeiGLink/cit3.0/**",
+          "**/MeiGLink/cit4/**",
+          "cit3.0/**",
+          "cit4/**"
+        ]
+      },
+      "action": {
+        "status": "blocked",
+        "reason": "CIT 3.0/4.0 源码仓禁止修改；请改为项目 vendor 配置或替换预置 cit.apk"
+      }
+    },
+    {
+      "id": "vendor_cit_xml_config",
+      "when": {
+        "path_glob_any": [
+          "vendor/meig/apps/cit/etc/**/*.xml",
+          "vendor/**/meig/**/cit*.xml",
+          "**/cit_common_config.xml",
+          "**/cit_*_config.xml"
+        ]
+      },
+      "action": {
+        "build_scope": "config_only",
+        "build_mode": "source_verified",
+        "deploy_mode": "adb_push",
+        "jenkins_job": null,
+        "artifact_mode": "adb_push",
+        "qfil_required": false
+      }
+    },
+    {
+      "id": "vendor_cit_yaml_config",
+      "when": {
+        "path_glob_any": [
+          "vendor/etc/meig/**/*.yaml",
+          "vendor/etc/meig/**/*.yml",
+          "**/config.yaml"
+        ]
+      },
+      "action": {
+        "build_scope": "config_only",
+        "build_mode": "source_verified",
+        "deploy_mode": "adb_push",
+        "jenkins_job": null,
+        "artifact_mode": "adb_push",
+        "qfil_required": false
+      }
+    },
+    {
+      "id": "prebuilt_cit_apk_replace",
+      "when": {
+        "path_glob_any": [
+          "vendor/meig/apps/cit/CITTest/cit.apk",
+          "**/CITTest/cit.apk"
+        ]
+      },
+      "action": {
+        "build_scope": "prebuilt_apk",
+        "build_mode": "source_verified",
+        "deploy_mode": "adb_push",
+        "jenkins_job": null,
+        "artifact_mode": "adb_push",
+        "qfil_required": false,
+        "notes": "替换预置 APK；可选后续 compile_module CITTest"
+      }
+    },
+    {
+      "id": "vendor_module",
+      "when": {
+        "path_glob_any": [
+          "vendor/**/*.cpp",
+          "vendor/**/*.c",
+          "vendor/**/*.h",
+          "vendor/**/*.bp",
+          "vendor/**/*.mk",
+          "vendor/**/*.java",
+          "vendor/**/*.kt"
+        ]
+      },
+      "action": {
+        "build_scope": "vendor_module",
+        "build_mode": "compile_module",
+        "deploy_mode": "adb_push_or_image",
+        "jenkins_job": "CIT/Vendor-Incremental",
+        "artifact_mode": "local_hash",
+        "qfil_required": false
+      }
+    },
+    {
+      "id": "framework_or_native",
+      "when": {
+        "path_glob_any": [
+          "frameworks/**",
+          "system/**",
+          "hardware/**",
+          "packages/**"
+        ]
+      },
+      "action": {
+        "build_scope": "module_or_full",
+        "build_mode": "compile_module",
+        "deploy_mode": "image_preferred",
+        "jenkins_job": "CIT/Vendor-Incremental",
+        "artifact_mode": "jenkins_download",
+        "qfil_required": false
+      }
+    },
+    {
+      "id": "full_image_default",
+      "when": {
+        "path_glob_any": ["**"]
+      },
+      "action": {
+        "build_scope": "full_image",
+        "build_mode": "jenkins",
+        "deploy_mode": "qfil",
+        "jenkins_job": "CIT/Full-Build",
+        "artifact_mode": "jenkins_download",
+        "qfil_required": true
+      }
+    }
+  ],
+  "concurrency": {
+    "max_parallel_bugs": 8,
+    "max_parallel_attempts_per_bug": 1,
+    "device_exclusive": true,
+    "lock_keys": ["code_root", "device_serial", "jenkins_job"]
+  }
+}

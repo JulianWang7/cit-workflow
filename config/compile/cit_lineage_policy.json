@@ -1,0 +1,51 @@
+{
+  "schema_version": "1.0",
+  "description": "MeiGLink CIT 世代策略：禁止改 cit3/cit4 源码仓；改动落在项目 vendor 配置或预置 APK 替换。",
+  "meiglink_root": "/home2/wanglingqi/Workspace/MeiGLink",
+  "lineages": {
+    "cit3": {
+      "source_path": "/home2/wanglingqi/Workspace/MeiGLink/cit3.0",
+      "modifiable": false,
+      "reason": "MeiGLink git 对象不完整（bad object HEAD）；业务约定不改 cit3.0 源码；项目使用预置 cit.apk + vendor XML。",
+      "config_roots_in_project": [
+        "vendor/meig/apps/cit/etc/"
+      ],
+      "prebuilt_apk_in_project": "vendor/meig/apps/cit/CITTest/cit.apk",
+      "device_config_paths": [
+        "/vendor/meig/apps/cit/etc/",
+        "/system/etc/meig/"
+      ]
+    },
+    "cit4": {
+      "source_path": "/home2/wanglingqi/Workspace/MeiGLink/cit4",
+      "modifiable": false,
+      "reason": "同仓策略：不以 cit4 源码为改动真源；项目差异优先 config.yaml。",
+      "config_roots_in_project": [
+        "vendor/etc/meig/",
+        "vendor/meig/apps/cit/etc/"
+      ],
+      "prebuilt_apk_in_project": "vendor/meig/apps/cit/CITTest/cit.apk",
+      "gradle_output_path_note": "cit4/app/build/outputs/apk/.../app-debug.apk 仅为独立 Gradle 本地产物路径，不是 Android 项目树 Soong/Make 产物；SLB783 等项目以 CITTest/cit.apk 预置模块打包。",
+      "device_config_paths": [
+        "/vendor/etc/meig/config.yaml",
+        "/system/etc/meig/config.yaml"
+      ]
+    }
+  },
+  "forbidden_edit_globs": [
+    "MeiGLink/cit3.0/**",
+    "MeiGLink/cit4/**",
+    "**/MeiGLink/cit3.0/**",
+    "**/MeiGLink/cit4/**"
+  ],
+  "apk_replacement_policy": {
+    "allowed": true,
+    "method": "replace_prebuilt_cit_apk_in_project_tree",
+    "steps": [
+      "在隔离环境用独立 Gradle/工程产出 APK（非直接改 MeiGLink cit3/cit4 源码仓并提交）",
+      "替换项目树 vendor/meig/apps/cit/CITTest/cit.apk",
+      "可选：compile_module CITTest 或 source_verified + adb push/install",
+      "正式合入走项目树 Gerrit，不走 MeiGLink HEAD"
+    ]
+  }
+}

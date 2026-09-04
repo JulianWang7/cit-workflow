@@ -1,0 +1,82 @@
+{
+  "schema_version": "1.0",
+  "description": "Jenkins Job 壳配置。当前服务器未分配时 enabled=false；接口形状保持完整以便扩展。",
+  "jenkins_base_url": "",
+  "auth": {
+    "mode": "api_token",
+    "credential_id": "jenkins-cit-service",
+    "note": "Token 不入仓；由环境变量或凭据库注入"
+  },
+  "defaults": {
+    "queue_timeout_sec": 1800,
+    "build_timeout_sec": 14400,
+    "unstable_policy": "block",
+    "idempotency_key": "cit_run_id+patch_sha256+job_name"
+  },
+  "jobs": {
+    "CIT/Preflight": {
+      "enabled": false,
+      "label": "android-build-110",
+      "purpose": "参数与 revision 校验，不真编",
+      "parameters": [
+        "CIT_RUN_ID",
+        "PROJECT",
+        "SOURCE_COMMIT",
+        "SOURCE_BASE_SHA",
+        "PATCH_SHA256",
+        "BUILD_SCOPE",
+        "CIT_LINEAGE"
+      ]
+    },
+    "CIT/Vendor-Incremental": {
+      "enabled": false,
+      "label": "android-build-110 && snm973",
+      "purpose": "vendor 增量 / 模块编译",
+      "parameters": [
+        "CIT_RUN_ID",
+        "PROJECT",
+        "SOURCE_COMMIT",
+        "SOURCE_BASE_SHA",
+        "PATCH_SHA256",
+        "PATCH_BUNDLE_URL",
+        "COMPONENT",
+        "BUILD_VARIANT",
+        "TARGET_PRODUCT",
+        "ARTIFACT_PROFILE",
+        "BUILD_SCOPE",
+        "CIT_LINEAGE",
+        "CLEAN_BUILD",
+        "REQUESTED_BY"
+      ]
+    },
+    "CIT/Full-Build": {
+      "enabled": false,
+      "label": "android-build-110 && snm973",
+      "purpose": "QSSI+Vendor+AMSS 整包，供 QFIL",
+      "parameters": [
+        "CIT_RUN_ID",
+        "PROJECT",
+        "SOURCE_COMMIT",
+        "MANIFEST_SHA256",
+        "COMPONENT",
+        "BUILD_VARIANT",
+        "TARGET_PRODUCT",
+        "ARTIFACT_PROFILE",
+        "CLEAN_BUILD",
+        "REQUESTED_BY"
+      ]
+    },
+    "CIT/MeiGLink-CIT4-APK": {
+      "enabled": false,
+      "label": "linux && gradle",
+      "purpose": "可选：隔离环境编 cit4 APK 后替换项目预置 cit.apk（不改 MeiGLink 源码仓业务树）",
+      "parameters": [
+        "CIT_RUN_ID",
+        "APK_SOURCE_URL",
+        "TARGET_PROJECT_TREE",
+        "REQUESTED_BY"
+      ],
+      "notes": "默认不启用；优先配置项与预置 APK 替换，而非改 cit4 源码。"
+    }
+  }
+}
