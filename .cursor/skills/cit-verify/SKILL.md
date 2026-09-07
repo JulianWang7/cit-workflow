@@ -96,7 +96,7 @@ verify(patches=[{local_path, remote_path}], verify_commands=[...], assertions=..
   "symptom_before": "...",
   "symptom_after": "...",
   "evidence": {
-    "reproduce_log": ".../12_cit_test/logs/..."
+    "reproduce_log": "runs/<PRODUCT>/<run_id>/logs/stages/..."
   },
   "verified_at": "ISO8601"
 }

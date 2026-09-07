@@ -16,7 +16,7 @@ description: |
 - MCP：仓内 **adb-mcp**（`device_state`、`clear_logcat_buffer`、`adb_shell`、`reproduce`、`ui_*`、`adb_suspend`、`serial_*`）
 - **禁止**用户级 `bugfix-reproduce`
 - 本 skill **不**单独完成 12；证据交给 `cit-verify` 写入 `result_*.json`
-- 中间日志：`runs_work/projects/<PRODUCT>/runs/<run_id>/12_cit_test/logs/`
+- 阶段明细日志 / run_events：`runs/<PRODUCT>/<run_id>/logs/`（**正式**；勿写 `runs_work/.../<stage>/logs`）
 
 ## 与 cit-verify 分工
 
@@ -70,13 +70,15 @@ adb_shell: grep loopbacktest_max /vendor/meig/apps/cit/etc/cit_common_config.xml
 adb_shell: sha256sum /vendor/meig/apps/cit/etc/cit_common_config.xml
 ```
 
-把 stdout 写入中间 `logs/reproduce_snippets.txt`，供 cit-verify 引用。
+把 stdout 写入正式 `logs/stages/` 下片段文件（或 `12_cit_test/intermediate/reproduce_snippets.txt` 后由引擎/习惯 promote），供 cit-verify 引用。路径优先：
+
+`runs/<PRODUCT>/<run_id>/logs/stages/<run_id>_12_cit_test.log`
 
 ### 6. 输出交接
 
 不强制单独 JSON；至少保证：
 
-- 中间 logs 有时间戳命令与输出
+- 正式 `logs/stages/`（或阶段 intermediate 镜像）有时间戳命令与输出
 - 口头/笔记交给 verify：哪些断言已能 auto、哪些必须 human
 
 可选写：

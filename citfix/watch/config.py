@@ -34,6 +34,13 @@ class WatchConfig:
     infra_backoff_seconds: list[int] = field(default_factory=lambda: [5, 20, 60])
     batch_item_running_timeout_seconds: int = 3600
     escalate_file_notify: bool = True
+    # Prefer formal runs/<PRODUCT>/<run_id>/watch when scanning/writing
+    prefer_formal_watch: bool = True
+    # After LOG-12 cutover: do not scan runs_work for active runs (formal only)
+    scan_intermediate_runs: bool = False
+    # Optional: nudge when run_events.jsonl has no new row (default off — observe first)
+    event_heartbeat_enabled: bool = False
+    event_heartbeat_timeout_seconds: int = 1800
 
     def stall_timeout_for(self, stage_id: str) -> int:
         table = self.stall_timeout_seconds or {}
@@ -107,4 +114,10 @@ def load_watch_config(path: Path | None = None) -> WatchConfig:
             batch.get("item_running_timeout_seconds") or 3600
         ),
         escalate_file_notify=bool(raw.get("escalate_file_notify", True)),
+        prefer_formal_watch=bool(raw.get("prefer_formal_watch", True)),
+        scan_intermediate_runs=bool(raw.get("scan_intermediate_runs", False)),
+        event_heartbeat_enabled=bool(raw.get("event_heartbeat_enabled", False)),
+        event_heartbeat_timeout_seconds=int(
+            raw.get("event_heartbeat_timeout_seconds") or 1800
+        ),
     )

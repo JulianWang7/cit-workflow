@@ -14,15 +14,17 @@ from citfix.watch.scan import RunWatchView
 from citfix.watch.state_io import (
     append_watch_event,
     now_iso,
+    resolve_watch_run_dir_for,
     save_watch_state,
     snapshots_dir,
 )
 
 
 def snapshot_workflow(view: RunWatchView) -> Path:
-    """Copy workflow_state.json into watch/snapshots/."""
+    """Copy workflow_state.json into watch/snapshots/ (prefer formal)."""
     ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    dest = snapshots_dir(view.intermediate_dir) / f"workflow_state_{ts}.json"
+    home = resolve_watch_run_dir_for(view)
+    dest = snapshots_dir(home) / f"workflow_state_{ts}.json"
     shutil.copy2(view.state_path, dest)
     return dest
 
@@ -91,6 +93,7 @@ def apply_nudge(
     reason: str,
     wait_seconds: int = 0,
 ) -> dict[str, Any]:
+    home = resolve_watch_run_dir_for(view)
     snap = snapshot_workflow(view)
     cli = nudge_citfix_cli(view, cfg, watch_state)
     watch_state["nudge_count"] = int(watch_state.get("nudge_count") or 0) + 1
@@ -107,9 +110,9 @@ def apply_nudge(
         schedule_next_retry(watch_state, wait_seconds)
     else:
         schedule_next_retry(watch_state, cfg.nudge_backoff(int(watch_state["nudge_count"])))
-    save_watch_state(view.intermediate_dir, watch_state)
+    save_watch_state(home, watch_state)
     append_watch_event(
-        view.intermediate_dir,
+        home,
         {
             "run_id": view.run_id,
             "bug_id": view.bug_id,
@@ -123,6 +126,7 @@ def apply_nudge(
             "cli_ok": cli.get("ok"),
             "dry_run": cfg.nudge_dry_run,
         },
+        formal_for_events=view.formal_dir or home,
     )
     return {"snapshot": str(snap), "cli": cli, "watch_state": watch_state}
 
@@ -135,15 +139,16 @@ def apply_escalate(
     error_class: str,
     reason: str,
 ) -> dict[str, Any]:
+    home = resolve_watch_run_dir_for(view)
     snap = snapshot_workflow(view)
     watch_state["watch_status"] = "escalated"
     watch_state["last_error_class"] = error_class
     watch_state["last_action"] = "escalate"
     watch_state["run_id"] = view.run_id
     watch_state["bug_id"] = view.bug_id
-    save_watch_state(view.intermediate_dir, watch_state)
+    save_watch_state(home, watch_state)
     append_watch_event(
-        view.intermediate_dir,
+        home,
         {
             "run_id": view.run_id,
             "bug_id": view.bug_id,
@@ -155,20 +160,20 @@ def apply_escalate(
             "action": "escalate",
             "snapshot": str(snap),
         },
+        formal_for_events=view.formal_dir or home,
     )
     notify_path = None
     if cfg.escalate_file_notify:
-        # Prefer formal notifications dir if present; else under intermediate watch/
-        formal_hint = (view.raw or {}).get("formal_run_dir")
-        base = view.intermediate_dir
-        if formal_hint:
-            # formal may be relative to workspace
-            cand = Path(formal_hint)
-            if not cand.is_absolute():
-                cand = cfg.workspace / cand
-            if cand.is_dir():
-                base = cand
-        notify_dir = base / "14_closure" / "output" / "notifications"
+        base = view.formal_dir or home
+        if view.formal_dir is None:
+            formal_hint = (view.raw or {}).get("formal_run_dir")
+            if formal_hint:
+                cand = Path(formal_hint)
+                if not cand.is_absolute():
+                    cand = cfg.workspace / cand
+                if cand.is_dir():
+                    base = cand
+        notify_dir = Path(base) / "14_closure" / "output" / "notifications"
         notify_dir.mkdir(parents=True, exist_ok=True)
         notify_path = notify_dir / f"watch_escalate_{view.run_id}.json"
         doc = {

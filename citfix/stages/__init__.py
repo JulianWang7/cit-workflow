@@ -5,6 +5,8 @@ import json
 from typing import Any
 
 from citfix.models import Blocker, RunContext, StageResult
+from citfix.paths import to_repo_relative
+from citfix.run_log import emit_event
 from citfix.stages.agent_gate import _agent_stage_check
 from citfix.stages.auto_prepare import (
     _stage_00_run_registry,
@@ -61,6 +63,21 @@ def execute_stage(stage_cfg: dict[str, Any], ctx: RunContext) -> StageResult:
     result = fn(ctx, stage_cfg, log_path)
     if not result.blocker and not result.skipped:
         result = _check_required_outputs(ctx, stage_cfg, result)
+    if result.blocker:
+        emit_event(
+            ctx.run_dir,
+            actor="engine",
+            event="gate_fail",
+            summary=f"{stage_cfg['id']} blocked: {result.blocker.reason}",
+            run_id=str(ctx.run_id),
+            bug_id=str(ctx.bug_id),
+            stage_id=str(stage_cfg["id"]),
+            level="warn",
+            refs={
+                "step": result.blocker.step,
+                "log_path": to_repo_relative(ctx.paths.repo_root, log_path),
+            },
+        )
     _log(log_path, f"done {stage_cfg['id']} status={'blocked' if result.blocker else 'ok'}")
     return result
 

@@ -35,6 +35,7 @@ def classify_run(
     cfg: WatchConfig,
     *,
     now: datetime | None = None,
+    last_event_age_seconds: float | None = None,
 ) -> Decision:
     now = now or datetime.now(timezone.utc).astimezone()
     if view.claim_only:
@@ -63,9 +64,6 @@ def classify_run(
     # retry_wait gate
     next_retry = parse_iso(str(watch_state.get("next_retry_at") or ""))
     if next_retry and _age_seconds(next_retry, now) is not None:
-        # if next_retry is in the future, wait
-        delta = _age_seconds(now, next_retry)  # inverted: how far next is ahead
-        # better: next_retry - now
         if next_retry.tzinfo is None:
             next_retry = next_retry.replace(tzinfo=now.tzinfo)
         if next_retry > now:
@@ -79,6 +77,27 @@ def classify_run(
     stall_limit = cfg.stall_timeout_for(view.current_stage or "default")
 
     if view.workflow_status == "running":
+        # Optional: no fresh run_events while workflow_status stays running
+        if (
+            cfg.event_heartbeat_enabled
+            and last_event_age_seconds is not None
+            and last_event_age_seconds >= cfg.event_heartbeat_timeout_seconds
+        ):
+            if nudge_count >= cfg.nudge_max:
+                return Decision(
+                    action="escalate",
+                    error_class="EVENT_HEARTBEAT",
+                    reason=f"no_run_event>{cfg.event_heartbeat_timeout_seconds}s nudge_exhausted",
+                )
+            return Decision(
+                action="nudge",
+                error_class="EVENT_HEARTBEAT",
+                reason=(
+                    f"event_heartbeat age={int(last_event_age_seconds)}s "
+                    f"limit={cfg.event_heartbeat_timeout_seconds}s"
+                ),
+                wait_seconds=cfg.nudge_backoff(nudge_count),
+            )
         if age is None:
             return Decision(action="nudge", error_class="WORKER_STALL", reason="missing_updated_at")
         if age >= stall_limit:

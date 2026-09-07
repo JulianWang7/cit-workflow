@@ -6,8 +6,8 @@
 
 | 类型 | 根目录 |
 |------|--------|
-| **正式产物** | `D:\Workspace\cit-workflow\runs\<PRODUCT>\<run_id>\` |
-| **中间产物** | `D:\Workspace\cit-workflow\runs_work\projects\<PRODUCT>\runs\<run_id>\` |
+| **正式产物** | `D:\Workspace\cit-workflow\runs\<PRODUCT>\<run_id>\`（含 `output/`、`logs/`、`watch/`） |
+| **中间产物** | `D:\Workspace\cit-workflow\runs_work\projects\<PRODUCT>\runs\<run_id>\`（brief/checkpoint/镜像；非日志真源） |
 
 | Stage ID | 正式目录 | 契约 | Executor | 主要 output |
 |----------|----------|------|----------|-------------|

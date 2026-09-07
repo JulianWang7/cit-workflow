@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "citfix_run_events.schema.json",
+  "title": "CitFix run_events.jsonl row",
+  "description": "One JSON object per line under runs/<PRODUCT>/<run_id>/logs/run_events.jsonl. Authority: docs/citfix-logging.md.",
+  "type": "object",
+  "required": [
+    "ts",
+    "run_id",
+    "bug_id",
+    "stage_id",
+    "actor",
+    "event",
+    "level",
+    "summary",
+    "refs"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "ts": {
+      "type": "string",
+      "description": "ISO8601 timestamp with offset"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "bug_id": {
+      "type": "string",
+      "description": "Bug id or empty for batch-only events"
+    },
+    "stage_id": {
+      "type": "string",
+      "description": "Pipeline stage id or empty for run-level events"
+    },
+    "actor": {
+      "type": "string",
+      "enum": ["engine", "agent", "watch", "mcp", "cli"]
+    },
+    "event": {
+      "type": "string",
+      "minLength": 1,
+      "description": "e.g. run_start, stage_start, stage_end, stage_blocked, stage_error, gate_fail, agent_stage_enter, nudge, escalate"
+    },
+    "level": {
+      "type": "string",
+      "enum": ["info", "warn", "error"]
+    },
+    "summary": {
+      "type": "string",
+      "description": "One-line human-readable summary (redacted)"
+    },
+    "refs": {
+      "type": "object",
+      "description": "Optional structured pointers (paths, exit_code, validation_errors, duration_ms). Must not contain secrets.",
+      "additionalProperties": true
+    }
+  }
+}

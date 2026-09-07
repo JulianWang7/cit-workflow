@@ -17,6 +17,8 @@ from .paths import (
     sanitize_product_dirname,
     to_repo_relative,
 )
+from .run_log import emit_event
+
 
 @dataclass
 class WorkflowState:
@@ -360,6 +362,7 @@ def run_pipeline(
 
     inter_dir: Path | None = None
     state: WorkflowState | None = None
+    created_new = False
 
     if not force_new:
         if run_id:
@@ -375,6 +378,7 @@ def run_pipeline(
                 inter_dir = None
 
     if state is None:
+        created_new = True
         rid = run_id or _make_run_id(bug_id, paths)
         inter_dir = paths.intermediate_run_dir(rid, UNASSIGNED_PROJECT)
         state = WorkflowState(
@@ -437,6 +441,25 @@ def run_pipeline(
         project_alias=str(alias) if alias else None,
     )
 
+    emit_event(
+        formal_dir,
+        actor="engine",
+        event="run_start" if created_new else "run_resume",
+        summary=(
+            f"{'start' if created_new else 'resume'} run {rid} "
+            f"bug={bug_id} mode={ctx.entry_mode}"
+        ),
+        run_id=rid,
+        bug_id=str(bug_id),
+        level="info",
+        refs={
+            "entry_mode": ctx.entry_mode,
+            "resume": bool(resume),
+            "created_new": created_new,
+            "formal": to_repo_relative(paths.repo_root, formal_dir),
+        },
+    )
+
     def _relocate(product_name: str) -> str:
         nonlocal formal_dir
         formal_dir = ensure_formal_under_product(paths, state, formal_dir, product_name)
@@ -484,6 +507,16 @@ def run_pipeline(
 
         log_path = ctx.stage_log_path(stage_cfg)
         rec.log_path = to_repo_relative(paths.repo_root, log_path)
+        emit_event(
+            formal_dir,
+            actor="engine",
+            event="stage_start",
+            summary=f"start {sid}",
+            run_id=rid,
+            bug_id=str(bug_id),
+            stage_id=sid,
+            refs={"log_path": rec.log_path},
+        )
 
         try:
             result = stages.execute_stage(stage_cfg, ctx)
@@ -500,6 +533,17 @@ def run_pipeline(
             rec.status = StageStatus.BLOCKED
             rec.blocker = blocker
             _set_checkpoint(state, sid, blocker)
+            emit_event(
+                formal_dir,
+                actor="engine",
+                event="stage_error",
+                summary=f"{sid} exception: {e}",
+                run_id=rid,
+                bug_id=str(bug_id),
+                stage_id=sid,
+                level="error",
+                refs={"exc_type": type(e).__name__, "step": blocker.step},
+            )
             product = _relocate(resolve_product(paths, state, formal_dir, ctx.intermediate_dir))
             save_state(paths, state, product=product)
             return state
@@ -507,6 +551,16 @@ def run_pipeline(
         if result.skipped:
             rec.status = StageStatus.SKIPPED
             rec.completed_at = _now_iso()
+            emit_event(
+                formal_dir,
+                actor="engine",
+                event="stage_end",
+                summary=f"skipped {sid}",
+                run_id=rid,
+                bug_id=str(bug_id),
+                stage_id=sid,
+                refs={"status": "skipped"},
+            )
             product = _relocate(resolve_product(paths, state, formal_dir, ctx.intermediate_dir))
             save_state(paths, state, product=product)
             continue
@@ -516,6 +570,20 @@ def run_pipeline(
             rec.blocker = result.blocker
             rec.outputs = result.outputs
             _set_checkpoint(state, sid, result.blocker)
+            emit_event(
+                formal_dir,
+                actor="engine",
+                event="stage_blocked",
+                summary=f"{sid} blocked: {result.blocker.reason}",
+                run_id=rid,
+                bug_id=str(bug_id),
+                stage_id=sid,
+                level="warn",
+                refs={
+                    "step": result.blocker.step,
+                    "log_path": rec.log_path,
+                },
+            )
             product = _relocate(resolve_product(paths, state, formal_dir, ctx.intermediate_dir))
             save_state(paths, state, product=product)
             return state
@@ -524,6 +592,16 @@ def run_pipeline(
         rec.completed_at = _now_iso()
         rec.outputs = result.outputs
         rec.blocker = None
+        emit_event(
+            formal_dir,
+            actor="engine",
+            event="stage_end",
+            summary=f"completed {sid}",
+            run_id=rid,
+            bug_id=str(bug_id),
+            stage_id=sid,
+            refs={"status": "completed", "log_path": rec.log_path},
+        )
         # After 04+, product is known — relocate formal + intermediate under <PRODUCT>/
         product = _relocate(resolve_product(paths, state, formal_dir, ctx.intermediate_dir))
         save_state(paths, state, product=product)
@@ -531,6 +609,16 @@ def run_pipeline(
     state.workflow_status = "completed"
     state.current_stage = "14_closure"
     state.checkpoint = {"message": "All stages completed", "run_id": state.run_id}
+    emit_event(
+        formal_dir,
+        actor="engine",
+        event="pipeline_completed",
+        summary=f"pipeline completed {rid}",
+        run_id=rid,
+        bug_id=str(bug_id),
+        stage_id="14_closure",
+        refs={},
+    )
     product = _relocate(resolve_product(paths, state, formal_dir, ctx.intermediate_dir))
     save_state(paths, state, product=product)
     return state

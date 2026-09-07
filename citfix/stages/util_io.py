@@ -20,9 +20,9 @@ def _write_json(path: Path, data: Any) -> None:
 
 
 def _log(log_path: Path, msg: str) -> None:
-    log_path.parent.mkdir(parents=True, exist_ok=True)
-    with log_path.open("a", encoding="utf-8") as f:
-        f.write(f"[{_now_iso()}] {msg}\n")
+    from citfix.run_log import append_stage_log_line
+
+    append_stage_log_line(log_path, msg)
 
 
 def _mirror_tree(src_dir: Path, dst_dir: Path) -> None:

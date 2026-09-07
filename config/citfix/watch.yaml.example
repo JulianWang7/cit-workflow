@@ -46,3 +46,13 @@ batch:
 
 # Write escalate notices under run 14_closure/output/notifications when possible
 escalate_file_notify: true
+
+# Prefer formal runs/<PRODUCT>/<run_id>/watch/ (fallback intermediate during transition)
+prefer_formal_watch: true
+# LOG-12 cutover: do not scan runs_work for active runs (set true only for legacy rescue)
+scan_intermediate_runs: false
+
+# Optional: nudge when logs/run_events.jsonl has no new row while status=running
+# Keep false until you confirm event writers are active (engine + agent milestones)
+event_heartbeat_enabled: false
+event_heartbeat_timeout_seconds: 1800

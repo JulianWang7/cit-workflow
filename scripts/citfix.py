@@ -78,6 +78,8 @@ def _print_status(state) -> None:
     print(f"entry_mode:    {getattr(state, 'entry_mode', '')}")
     print(f"formal:        {formal}")
     print(f"intermediate:  {inter}")
+    events = formal / "logs" / "run_events.jsonl"
+    print(f"run_events:    {events} [{'OK' if events.is_file() else '--'}]")
     for sid, rec in state.stages.items():
         print(f"  {sid}: {rec.status.value}")
 
@@ -97,6 +99,8 @@ def _print_debug(state) -> None:
     print(f"entry_mode:      {getattr(state, 'entry_mode', '')}")
     print(f"formal_run_dir:  {formal}")
     print(f"intermediate:    {inter}")
+    print(f"run_events:      {formal / 'logs' / 'run_events.jsonl'}")
+    print(f"stage_logs:      {formal / 'logs' / 'stages'}")
     print(f"checkpoint_md:   {inter / 'CHECKPOINT.md'}")
     print(f"workflow_state:  {inter / 'workflow_state.json'}")
     cp = state.checkpoint or {}
@@ -109,6 +113,19 @@ def _print_debug(state) -> None:
         if rec.log_path:
             line += f"  log={rec.log_path}"
         print(line)
+    try:
+        from citfix.run_log import read_run_events
+
+        recent = read_run_events(formal, limit=8)
+        if recent:
+            print("\n--- recent run_events (last 8) ---")
+            for row in recent:
+                print(
+                    f"  [{row.get('ts', '')}] {row.get('actor')}/{row.get('event')} "
+                    f"{row.get('stage_id', '')} — {row.get('summary', '')}"
+                )
+    except Exception as e:  # noqa: BLE001
+        print(f"\n--- recent run_events: (unavailable: {e}) ---")
     print("\n--- key artifacts (formal) ---")
     for rel in (
         f"03_zentao_fetch/output/zentao_fetch_results.json",
@@ -116,6 +133,7 @@ def _print_debug(state) -> None:
         f"06_context_snapshot/output/context.json",
         f"07_analysis/output/root_cause_{state.bug_id}.json",
         f"08_changes/output/change_{state.bug_id}.json",
+        f"logs/run_events.jsonl",
         f"CHECKPOINT.md",
     ):
         p = formal / rel
@@ -132,6 +150,11 @@ def _print_batch(state, batch_dir: Path) -> None:
     print(f"device_serial: {state.device_serial or '(from plan_bank)'}")
     print(f"batch_status:  {state.batch_status}")
     print(f"batch_dir:     {batch_dir}")
+    formal = Path(state.formal_run_dir) if state.formal_run_dir else None
+    if formal:
+        events = formal / "logs" / "run_events.jsonl"
+        print(f"formal batch:  {formal}")
+        print(f"run_events:    {events} [{'OK' if events.is_file() else '--'}]")
     print(f"queue ({len(state.queue)}):")
     for i, q in enumerate(state.queue):
         mark = ">" if i == state.current_index and state.batch_status == "running" else " "
@@ -271,7 +294,22 @@ def _run_project(cmd) -> int:
         print(f"02 bug_ids:    {batch_dir / '02_bug_task_extract' / 'output' / 'bug_ids.json'}")
         print(f"batch_state:   {batch_dir / 'batch_state.json'}")
         if state.formal_run_dir:
-            print(f"formal batch:  {state.formal_run_dir}")
+            formal = Path(state.formal_run_dir)
+            print(f"formal batch:  {formal}")
+            print(f"run_events:    {formal / 'logs' / 'run_events.jsonl'}")
+            try:
+                from citfix.run_log import read_run_events
+
+                recent = read_run_events(formal, limit=8)
+                if recent:
+                    print("--- recent batch run_events (last 8) ---")
+                    for row in recent:
+                        print(
+                            f"  [{row.get('ts', '')}] {row.get('event')} "
+                            f"— {row.get('summary', '')}"
+                        )
+            except Exception as e:  # noqa: BLE001
+                print(f"--- recent batch run_events: (unavailable: {e}) ---")
         if claim_only:
             for item in state.queue:
                 if item.run_id:

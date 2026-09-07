@@ -66,17 +66,24 @@ def _load_json(path: Path) -> dict[str, Any] | None:
         return None
 
 
-def view_from_state_file(state_path: Path) -> RunWatchView | None:
+def view_from_state_file(
+    state_path: Path,
+    *,
+    intermediate_dir: Path | None = None,
+    formal_dir: Path | None = None,
+) -> RunWatchView | None:
     data = _load_json(state_path)
     if not data:
         return None
-    inter = state_path.parent
-    # Prefer intermediate layout: .../runs/<run_id>/workflow_state.json
-    formal = None
-    formal_rel = data.get("formal_run_dir")
-    if formal_rel:
-        # may be repo-relative; resolve next to known parents later by caller
-        pass
+    run_dir = state_path.parent
+    inter = intermediate_dir or run_dir
+    formal = formal_dir
+    # Infer layout when caller did not pass formal/intermediate
+    parts = [str(p) for p in state_path.resolve().parts]
+    if formal is None and "runs_work" not in parts and len(parts) >= 4 and parts[-4] == "runs":
+        formal = run_dir
+    if intermediate_dir is None and "runs_work" in parts:
+        inter = run_dir
     stages = data.get("stages") if isinstance(data.get("stages"), dict) else {}
     cur = str(data.get("current_stage") or "")
     st_rec = stages.get(cur) if isinstance(stages.get(cur), dict) else {}
@@ -85,15 +92,14 @@ def view_from_state_file(state_path: Path) -> RunWatchView | None:
     claim = (inter / "claim.json").is_file() or bool(
         (data.get("checkpoint") or {}).get("marker") == "CLAIMED_FOR_DEBUG"
     )
-    # also check sibling claim under formal via run.json
-    run_json = _load_json(inter / "run.json") or {}
+    run_json = _load_json(inter / "run.json") or _load_json(run_dir / "run.json") or {}
     if run_json.get("claim_only") or run_json.get("status") == "CLAIMED_FOR_DEBUG":
         claim = True
 
     updated = str(data.get("updated_at") or "")
     return RunWatchView(
         bug_id=str(data.get("bug_id") or ""),
-        run_id=str(data.get("run_id") or inter.name),
+        run_id=str(data.get("run_id") or run_dir.name),
         workflow_status=str(data.get("workflow_status") or ""),
         current_stage=cur,
         updated_at=updated,
@@ -102,7 +108,7 @@ def view_from_state_file(state_path: Path) -> RunWatchView | None:
         checkpoint_reason=str(cp.get("reason") or ""),
         product=str(data.get("product") or ""),
         intermediate_dir=inter,
-        formal_dir=None,
+        formal_dir=formal,
         state_path=state_path,
         claim_only=claim,
         raw=data,
@@ -122,7 +128,7 @@ def iter_active_runs(projects_root: Path) -> list[RunWatchView]:
             wf = run_dir / "workflow_state.json"
             if not wf.is_file():
                 continue
-            view = view_from_state_file(wf)
+            view = view_from_state_file(wf, intermediate_dir=run_dir)
             if not view:
                 continue
             if view.workflow_status in ("completed",):
@@ -134,6 +140,56 @@ def iter_active_runs(projects_root: Path) -> list[RunWatchView]:
                 continue
             out.append(view)
     return out
+
+
+def iter_active_runs_formal(runs_root: Path) -> list[RunWatchView]:
+    """Scan formal runs/<PRODUCT>/<run_id>/workflow_state.json."""
+    out: list[RunWatchView] = []
+    if not runs_root.is_dir():
+        return out
+    for product_dir in runs_root.iterdir():
+        if not product_dir.is_dir():
+            continue
+        for run_dir in product_dir.iterdir():
+            if not run_dir.is_dir():
+                continue
+            if str(run_dir.name).startswith("CIT-BATCH-"):
+                continue
+            wf = run_dir / "workflow_state.json"
+            if not wf.is_file():
+                continue
+            view = view_from_state_file(wf, formal_dir=run_dir, intermediate_dir=run_dir)
+            if not view:
+                continue
+            if view.workflow_status in ("completed",):
+                continue
+            if view.claim_only:
+                continue
+            out.append(view)
+    return out
+
+
+def merge_run_views(*groups: list[RunWatchView]) -> list[RunWatchView]:
+    """Dedupe by run_id; prefer entries that already have formal_dir set."""
+    by_id: dict[str, RunWatchView] = {}
+    for group in groups:
+        for view in group:
+            rid = view.run_id
+            prev = by_id.get(rid)
+            if prev is None:
+                by_id[rid] = view
+                continue
+            # Prefer formal state path; keep intermediate_dir from runs_work when available
+            if view.formal_dir is not None:
+                if prev.intermediate_dir and "runs_work" in str(prev.intermediate_dir):
+                    view.intermediate_dir = prev.intermediate_dir
+                by_id[rid] = view
+            elif prev.formal_dir is None:
+                by_id[rid] = view
+            else:
+                if view.intermediate_dir and "runs_work" in str(view.intermediate_dir):
+                    prev.intermediate_dir = view.intermediate_dir
+    return list(by_id.values())
 
 
 def iter_batches(projects_root: Path) -> list[BatchWatchView]:

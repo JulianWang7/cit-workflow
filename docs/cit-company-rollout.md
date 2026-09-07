@@ -27,7 +27,8 @@
   4. 输入 /citfix <bug_id>
 ```
 
-可选：另备 `runs_work` 作为中间产物根（与正式 `runs/` 分离）；路径由 pipeline / 引擎解析，勿手写散落。
+可选：另备 `runs_work` 作为中间产物根（brief/checkpoint/镜像，与正式 `runs/` 分离）；路径由 pipeline / 引擎解析，勿手写散落。  
+**运行日志与 Watch 落在正式树**：`runs/<PRODUCT>/<run_id>/logs/`、`…/watch/`（见 `docs/citfix-logging.md`）；不要把日志唯一真源放在 `runs_work`。
 
 ---
 
@@ -123,12 +124,13 @@
 2. `python -m venv .venv` → `pip install -r requirements-mcp.txt` → 设 `BUGFIX_CONFIG_DIR` → **重启 Cursor**。  
 3. 拷贝并填写 `zentao.yaml` / `servers.yaml`（或走 cit-setup）。  
 4. 跑：`python scripts/cit_smoke_context_prepare.py`；可选跑 `unittest`（gates/closure/outbox）。  
-5. 实操：`/citfix <demo_bug>` → 看 `runs/<run_id>/` 正式产物与卡点 → `--resume`。  
-6. 阅读：`docs/citfix-stage-gates.md`（门禁）+ 当前阶段对应 `cit-*` skill。
+5. 实操：`/citfix <demo_bug>` → 看 `runs/<PRODUCT>/<run_id>/` 正式产物（含 `output/` 与 `logs/`）与卡点 → `--resume`。  
+6. 阅读：`docs/citfix-stage-gates.md`（门禁）+ `docs/citfix-logging.md`（日志）+ 当前阶段对应 `cit-*` skill。
 
 培训验收（口头即可）：
 
-- [ ] 能说清正式 `runs/` vs 中间产物目录  
+- [ ] 能说清正式 `runs/`（含 `logs/`）vs 中间 `runs_work`（brief/镜像，非日志真源）  
+- [ ] 知道交付/归档 run 时应带上 `logs/run_events.jsonl`（若已产生）  
 - [ ] 知道不要装全局 cit skill、不要在本仓用 bugfix-*  
 - [ ] 知道 auto 段靠引擎、07+ 靠 Agent+skill、对错靠 JSON 门禁  
 

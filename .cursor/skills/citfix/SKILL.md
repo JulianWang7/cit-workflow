@@ -3,7 +3,7 @@ name: citfix
 description: |
   cit-workflow 自动化流水线的 debug 入口（固定斜杠命令 /citfix {bug_id} 或 /citfix project <alias>）。
   不是「调试辅助 Skill」——是整条 CIT 流水线（EXP-CIT-004..011）的唯一运行入口。
-  当前处于工作流完善阶段；正式产物写 cit-workflow/runs/<PRODUCT>/<run_id>/（交付真源），中间产物写 runs_work/projects/<PRODUCT>/runs/。
+  当前处于工作流完善阶段；正式产物与运行日志写 cit-workflow/runs/<PRODUCT>/<run_id>/（含 logs/），中间产物（brief/镜像）写 runs_work/projects/<PRODUCT>/runs/。
   触发词：/citfix、citfix 97203、citfix project slb783、citfix --resume、CIT 流水线、CIT 自动化。
 ---
 
@@ -18,10 +18,10 @@ description: |
 
 | 类型 | 根目录 | 用途 |
 |------|--------|------|
-| **正式产物（交付真源）** | `D:\Workspace\cit-workflow\runs\<PRODUCT>\<run_id>\` | 校验通过的阶段 `output/` JSON、run.json、附件、**`logs/`** |
-| **中间产物** | `D:\Workspace\cit-workflow\runs_work\projects\<PRODUCT>\runs\<run_id>\` | AGENT_BRIEF、_rejected、workflow_state 镜像（过渡） |
+| **正式产物（交付真源）** | `D:\Workspace\cit-workflow\runs\<PRODUCT>\<run_id>\` | 校验通过的阶段 `output/` JSON、run.json、附件、**`logs/`**（运行轨迹） |
+| **中间产物** | `D:\Workspace\cit-workflow\runs_work\projects\<PRODUCT>\runs\<run_id>\` | AGENT_BRIEF、_rejected、workflow_state 镜像（过渡；**非**日志真源） |
 
-引擎：正式 output → 镜像到中间；Agent 若只写中间，会 promote 到正式。
+引擎：正式 output → 镜像到中间；Agent 若只写中间，会 promote 到正式。运行日志只写正式 `logs/`（见 `docs/citfix-logging.md`）。
 
 ## 子文档（按需 Read）
 
@@ -139,7 +139,7 @@ NPI 说明：`docs/citfix-npi.md`
 Skill 厚度标准与批量预留说明：`docs/citfix-skill-thickness.md`。
 
 
-辅助代码只放 `cit-workflow/citfix/`；**正式产物**放 `cit-workflow/runs/<run_id>/`；**中间产物**放 `runs_work/projects/<PRODUCT>/runs/<run_id>/`。
+辅助代码只放 `cit-workflow/citfix/`；**正式产物 + 运行日志**放 `cit-workflow/runs/<PRODUCT>/<run_id>/`（含 `logs/`）；**中间产物**（brief/checkpoint/镜像）放 `runs_work/projects/<PRODUCT>/runs/<run_id>/`。
 
 ---
 

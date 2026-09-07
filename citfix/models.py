@@ -6,6 +6,8 @@ from dataclasses import asdict, dataclass, field
 from enum import Enum
 from typing import Any
 
+from citfix.run_log import logs_dir, run_events_path, stage_log_file
+
 
 class StageStatus(str, Enum):
     PENDING = "pending"
@@ -83,14 +85,17 @@ class RunContext:
         """中间产物根：``runs_work/projects/<PRODUCT>/runs/<run_id>/<NN_stage>/``。"""
         return self.intermediate_dir / stage_cfg["dir"]
 
+    def logs_dir(self):
+        """Formal run logs root: ``runs/<PRODUCT>/<run_id>/logs/``."""
+        return logs_dir(self.run_dir)
+
+    def run_events_path(self):
+        """Formal structured timeline: ``logs/run_events.jsonl``."""
+        return run_events_path(self.run_dir)
+
     def stage_log_path(self, stage_cfg: dict[str, Any]):
-        p = (
-            self.intermediate_stage_root(stage_cfg)
-            / "logs"
-            / f"{self.run_id}_{stage_cfg['id']}.log"
-        )
-        p.parent.mkdir(parents=True, exist_ok=True)
-        return p
+        """Stage detail log under formal ``logs/stages/`` (not stage output/)."""
+        return stage_log_file(self.run_dir, self.run_id, stage_cfg["id"])
 
     def run_stage_mirror(self, stage_cfg: dict[str, Any]):
         """Mirror formal stage tree into the intermediate (test-bed) copy."""

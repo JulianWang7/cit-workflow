@@ -9,6 +9,7 @@ from citfix.closure_ops import post_closure_side_effects
 from citfix.models import Blocker, RunContext, StageResult
 from citfix.paths import to_repo_relative
 from citfix.plan_bank_sync import sync_analysis_conclusion_path
+from citfix.run_log import emit_event
 from citfix.stages.util_io import (
     _mirror_tree,
     _now_iso,
@@ -113,11 +114,13 @@ def _write_agent_brief(
         "required_output_intermediate": inter_rel,
         "formal_run_dir": run_rel,
         "intermediate_run_dir": inter_run_rel,
+        "run_events": to_repo_relative(ctx.paths.repo_root, ctx.run_events_path()),
         "kb_doc": stage_cfg.get("kb_doc"),
         "kb_file": stage_cfg.get("kb_file"),
         "protocol": (
             "Read each skill SKILL.md in skill_load_order; execute fully; "
             "write required_output (formal runs/); engine mirrors to intermediate test-bed; "
+            "append milestone events to run_events when entering/leaving stage; "
             "then /citfix --resume"
         ),
         "forbidden": ["~/.cursor/skills/bugfix-*", "user-level skills"],
@@ -167,6 +170,7 @@ def _write_agent_brief(
         "",
         f"- Formal (正式产物): `{run_rel}`",
         f"- Intermediate (中间产物): `{inter_run_rel}`",
+        f"- Run events: `{to_repo_relative(ctx.paths.repo_root, ctx.run_events_path())}`",
         "",
         "## Load project skills (in order)",
         "",
@@ -215,6 +219,20 @@ def _write_agent_brief(
         ]
     )
     (inter / "AGENT_BRIEF.md").write_text("\n".join(lines), encoding="utf-8")
+    emit_event(
+        ctx.run_dir,
+        actor="agent",
+        event="agent_stage_enter",
+        summary=f"AGENT_BRIEF written for {stage_cfg.get('id')}",
+        run_id=str(ctx.run_id),
+        bug_id=str(ctx.bug_id),
+        stage_id=str(stage_cfg.get("id") or ""),
+        refs={
+            "agent_brief": to_repo_relative(ctx.paths.repo_root, brief_path),
+            "required_output": formal_rel,
+            "run_events": to_repo_relative(ctx.paths.repo_root, ctx.run_events_path()),
+        },
+    )
     return brief_path
 
 
@@ -387,6 +405,36 @@ def _agent_stage_check(
             step = "human_gate" if sid == "13_human_gate" and any(
                 "pending_human" in e for e in v_errs
             ) else "output_validation"
+            emit_event(
+                ctx.run_dir,
+                actor="agent",
+                event="agent_gate_fail",
+                summary=f"{sid} output validation failed ({len(v_errs)} errors)",
+                run_id=str(ctx.run_id),
+                bug_id=str(ctx.bug_id),
+                stage_id=sid,
+                level="warn",
+                refs={
+                    "step": step,
+                    "validation_errors": v_errs[:20],
+                    "expected_output": to_repo_relative(ctx.paths.repo_root, out_path),
+                },
+            )
+            emit_event(
+                ctx.run_dir,
+                actor="engine",
+                event="gate_fail",
+                summary=f"{sid} output validation failed ({len(v_errs)} errors)",
+                run_id=str(ctx.run_id),
+                bug_id=str(ctx.bug_id),
+                stage_id=sid,
+                level="warn",
+                refs={
+                    "step": step,
+                    "validation_errors": v_errs[:20],
+                    "expected_output": to_repo_relative(ctx.paths.repo_root, out_path),
+                },
+            )
             return StageResult(
                 outputs={"agent_brief": str(brief_path), "rejected_output": str(out_path)},
                 blocker=Blocker(
@@ -474,6 +522,19 @@ def _agent_stage_check(
                     _mirror_tree(ctx.run_dir / "08_changes" / "output", ctx.intermediate_dir / "08_changes" / "output")
                     side_outputs["change_synced"] = str(ch)
         _mirror_tree(stage_root / "output", stage_inter / "output")
+        emit_event(
+            ctx.run_dir,
+            actor="agent",
+            event="agent_gate_pass",
+            summary=f"{sid} output accepted",
+            run_id=str(ctx.run_id),
+            bug_id=str(ctx.bug_id),
+            stage_id=sid,
+            refs={
+                "primary": to_repo_relative(ctx.paths.repo_root, out_path),
+                "agent_brief": to_repo_relative(ctx.paths.repo_root, brief_path),
+            },
+        )
         return StageResult(
             outputs={
                 "primary": str(out_path),
@@ -498,8 +559,25 @@ def _agent_stage_check(
         [
             f"Write formal output: {out_rel}",
             f"(Also OK to write intermediate twin first: {inter_rel} — engine promotes)",
+            f"Append milestone: python scripts/cit_run_event.py --run-dir \"{to_repo_relative(ctx.paths.repo_root, ctx.run_dir)}\" "
+            f"--bug-id {ctx.bug_id} --stage {sid} --event agent_checkpoint "
+            f"--summary \"waiting for work\" --level warn",
             f"Resume: /citfix {ctx.bug_id} --resume",
         ]
+    )
+    emit_event(
+        ctx.run_dir,
+        actor="agent",
+        event="agent_checkpoint",
+        summary=default_blocker_reason,
+        run_id=str(ctx.run_id),
+        bug_id=str(ctx.bug_id),
+        stage_id=sid,
+        level="warn",
+        refs={
+            "expected_output": out_rel,
+            "agent_brief": brief_rel,
+        },
     )
     return StageResult(
         outputs={"agent_brief": brief_rel},

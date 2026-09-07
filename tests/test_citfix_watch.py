@@ -59,6 +59,11 @@ def _view(
 
 
 class ClassifyTests(unittest.TestCase):
+    def test_scan_intermediate_default_off(self) -> None:
+        cfg = WatchConfig()
+        self.assertFalse(cfg.scan_intermediate_runs)
+        self.assertTrue(cfg.prefer_formal_watch)
+
     def test_running_fresh_ok(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             inter = Path(td) / "run"
@@ -124,6 +129,90 @@ class ProcessAndRestoreTests(unittest.TestCase):
             self.assertGreaterEqual(int(ws.get("nudge_count") or 0), 1)
             snaps = list(snapshots_dir(inter).glob("workflow_state_*.json"))
             self.assertTrue(snaps)
+
+    def test_process_nudge_prefers_formal_watch(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            inter = root / "runs_work" / "projects" / "P" / "runs" / "CIT-TEST-91001"
+            formal = root / "runs" / "P" / "CIT-TEST-91001"
+            old = datetime.now(timezone.utc).astimezone() - timedelta(seconds=5000)
+            view = _view(inter, updated=old)
+            view.formal_dir = formal
+            formal.mkdir(parents=True)
+            cfg = WatchConfig(
+                workspace=root,
+                nudge_dry_run=True,
+                stall_timeout_seconds={"default": 60},
+                prefer_formal_watch=True,
+            )
+            result = process_run(view, cfg)
+            self.assertEqual(result["decision"], "nudge")
+            self.assertTrue((formal / "watch" / "watch_state.json").is_file())
+            self.assertTrue((formal / "logs" / "run_events.jsonl").is_file())
+            from citfix.run_log import read_run_events
+
+            rows = read_run_events(formal)
+            self.assertTrue(any(r.get("actor") == "watch" for r in rows))
+
+    def test_event_heartbeat_nudge(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            inter = Path(td) / "run"
+            formal = Path(td) / "formal"
+            view = _view(
+                inter,
+                updated=datetime.now(timezone.utc).astimezone(),  # workflow fresh
+            )
+            view.formal_dir = formal
+            formal.mkdir(parents=True)
+            from citfix.run_log import emit_event
+
+            emit_event(
+                formal,
+                actor="engine",
+                event="stage_start",
+                summary="old",
+                run_id=view.run_id,
+                bug_id=view.bug_id,
+                stage_id="07_analysis",
+            )
+            # Backdate the event file timestamp via rewriting ts
+            ev = formal / "logs" / "run_events.jsonl"
+            old_ts = (datetime.now(timezone.utc).astimezone() - timedelta(seconds=5000)).strftime(
+                "%Y-%m-%dT%H:%M:%S%z"
+            )
+            ev.write_text(
+                json.dumps(
+                    {
+                        "ts": old_ts,
+                        "run_id": view.run_id,
+                        "bug_id": view.bug_id,
+                        "stage_id": "07_analysis",
+                        "actor": "engine",
+                        "event": "stage_start",
+                        "level": "info",
+                        "summary": "old",
+                        "refs": {},
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            cfg = WatchConfig(
+                stall_timeout_seconds={"default": 99999},
+                event_heartbeat_enabled=True,
+                event_heartbeat_timeout_seconds=60,
+                nudge_max=3,
+                nudge_dry_run=True,
+            )
+            d = classify_run(
+                view,
+                {},
+                cfg,
+                last_event_age_seconds=5000,
+            )
+            self.assertEqual(d.action, "nudge")
+            self.assertEqual(d.error_class, "EVENT_HEARTBEAT")
 
     def test_restore_snapshot(self) -> None:
         with tempfile.TemporaryDirectory() as td:

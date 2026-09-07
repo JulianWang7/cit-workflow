@@ -181,6 +181,14 @@ class BatchIntakeTests(unittest.TestCase):
                 or (formal / "02_bug_task_extract" / "output" / "bug_ids.json").is_file()
             )
             self.assertTrue((batch_dir / "batch_state.json").is_file())
+            from citfix.run_log import read_run_events
+
+            events = read_run_events(formal)
+            names = [e.get("event") for e in events]
+            self.assertIn("batch_start", names)
+            self.assertIn("batch_01_done", names)
+            self.assertIn("batch_ready", names)
+            self.assertTrue((formal / "logs" / "run_events.jsonl").is_file())
 
 
 if __name__ == "__main__":

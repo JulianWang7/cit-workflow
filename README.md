@@ -61,15 +61,17 @@ cit-workflow/
 ├── AGENTS.md / README.md / pyproject.toml / requirements-mcp.txt
 ```
 
-### 1.1 正式产物与日志（中间产物）规则
+### 1.1 正式产物、运行日志与中间产物
 
 | 类型 | 路径 | 内容 |
 |------|------|------|
-| **正式产物** | `runs/<PRODUCT>/<run_id>/` | 阶段 `output/`、附件、`run.json`、`workflow_state.json`、**`logs/`**（`run_events.jsonl` + `logs/stages/`） |
-| **中间产物** | `runs_work/projects/<PRODUCT>/runs/<run_id>/` | AGENT_BRIEF、CHECKPOINT、output 镜像（过渡；可删目标）。**可读**；持久代码/配置默认不写于此，确需写入须事先告知 |
+| **正式产物（交付真源）** | `runs/<PRODUCT>/<run_id>/` | 阶段 `output/`、附件、`run.json`、`workflow_state.json` |
+| **运行日志（正式，可归档）** | `runs/<PRODUCT>/<run_id>/logs/` | `run_events.jsonl` + `logs/stages/*.log`；批次同理 `runs/.../<batch_id>/logs/`。**不以** `runs_work` 为日志真源 |
+| **监督旁路（正式）** | `runs/<PRODUCT>/<run_id>/watch/` | Watch 的 `watch_state` / `events.jsonl` / `snapshots`（默认只扫正式树） |
+| **中间产物（过渡）** | `runs_work/projects/<PRODUCT>/runs/<run_id>/` | AGENT_BRIEF、CHECKPOINT、output 镜像。**可读**；持久代码/配置默认不写于此 |
 | **批处理发现** | 正式 `runs/<PRODUCT>/<batch_id>/`；中间 `…/batches/<batch_id>/` | 01/02 auto 产物 + `batch_state.json` |
 
-运行日志约定见 [`docs/citfix-logging.md`](docs/citfix-logging.md)。
+约定详见 [`docs/citfix-logging.md`](docs/citfix-logging.md)、[`docs/citfix-watch.md`](docs/citfix-watch.md)。
 
 
 示例（单 Bug 81097 / 产品 `SLB783 - Android14`）：
@@ -224,10 +226,11 @@ cursor-agent --workspace D:\Workspace\cit-workflow "/citfix 81097 --resume"
 **观察 Watch（无 Web UI）**
 
 ```text
-runs_work/projects/<PRODUCT>/runs/<run_id>/watch/
+runs/<PRODUCT>/<run_id>/watch/
   watch_state.json
   events.jsonl
   snapshots/
+runs/<PRODUCT>/<run_id>/logs/run_events.jsonl   # 含 actor=watch 镜像
 ```
 
 终端 A 会打印 `nudges` / `escalations`；细节见 `docs/citfix-watch.md`。

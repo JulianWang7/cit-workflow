@@ -32,7 +32,7 @@
 ## 禁止
 
 - 在未更新 EXP-CIT-004 §2–5（及 FIG-NPI）前，改变 NPI ①–⑧ / ⑥ / ⑦ 业务语义
-- 混淆路径角色：正式产物必须进 `cit-workflow/runs/<PRODUCT>/<run_id>/`；中间产物（brief/checkpoint/镜像）在 `runs_work/projects/<PRODUCT>/runs/<run_id>/`（**可读**；持久代码/配置默认不写 `runs_work`，确需写入须事先告知用户）
+- 混淆路径角色：正式产物与**运行日志**必须进 `cit-workflow/runs/<PRODUCT>/<run_id>/`（`output/` + `logs/` + `watch/`）；中间产物（brief/checkpoint/镜像）在 `runs_work/projects/<PRODUCT>/runs/<run_id>/`（**可读**；**不是**日志真源；持久代码/配置默认不写 `runs_work`，确需写入须事先告知用户）
 - 在 `runs_work` 根目录堆临时 `.py`（辅助脚本放 `cit-workflow/tests/` / `scripts/`）
 - 修改已有 run 产物，除非用户点名修复测试数据或运行规定脚本落盘
 - 默认加载用户级 `bugfix-*` / 非 `cit_mcp_launch` MCP（缺失时临时降级须明示上报）

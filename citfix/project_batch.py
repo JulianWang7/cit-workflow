@@ -17,6 +17,7 @@ from citfix.paths import (
     sanitize_product_dirname,
 )
 from citfix.project_match import CandidateBug, DiscoverResult, discover_project_cit_bugs
+from citfix.run_log import emit_event
 from citfix.stages.req_extract import _stage_01_req_parse, _stage_02_bug_task_extract
 from citfix.stages.util_io import _write_json
 
@@ -126,6 +127,41 @@ def _candidate_row(c: CandidateBug) -> dict[str, Any]:
         "verify_mode": c.verify_mode,
         "source_tool": "zentao_my_bugs",
     }
+
+
+def _formal_dir(state: ProjectBatchState | None = None, formal: Path | None = None) -> Path | None:
+    if formal is not None:
+        return Path(formal)
+    if state and state.formal_run_dir:
+        return Path(state.formal_run_dir)
+    return None
+
+
+def _emit_batch(
+    formal: Path | None,
+    *,
+    event: str,
+    summary: str,
+    batch_id: str = "",
+    bug_id: str = "",
+    stage_id: str = "",
+    level: str = "info",
+    refs: dict[str, Any] | None = None,
+) -> None:
+    """Append to formal batch logs/run_events.jsonl (actor=cli for project orchestration)."""
+    if formal is None:
+        return
+    emit_event(
+        formal,
+        actor="cli",
+        event=event,
+        summary=summary,
+        run_id=batch_id or Path(formal).name,
+        bug_id=str(bug_id),
+        stage_id=stage_id,
+        level=level,
+        refs=refs or {},
+    )
 
 
 def _stage_map(pipeline: dict[str, Any]) -> dict[str, dict[str, Any]]:
@@ -380,6 +416,14 @@ def run_batch_intake(
         project_alias=alias,
     )
 
+    _emit_batch(
+        formal,
+        event="batch_start",
+        summary=f"project intake start alias={alias} batch={bid}",
+        batch_id=bid,
+        refs={"project_alias": alias, "device_serial": device_serial or ""},
+    )
+
     # Optional: inject discover_fn into stage 01 via monkeypatch of module symbol
     if discover_fn is not None:
         import citfix.stages.req_extract as req_mod
@@ -394,11 +438,29 @@ def run_batch_intake(
         r1 = _stage_01_req_parse(ctx, stages["01_req_parse"], ctx.stage_log_path(stages["01_req_parse"]))
 
     if r1.blocker:
+        _emit_batch(
+            formal,
+            event="batch_blocked",
+            summary=f"01_req_parse blocked: {r1.blocker.reason}",
+            batch_id=bid,
+            stage_id="01_req_parse",
+            level="error",
+            refs={"step": r1.blocker.step},
+        )
         raise RuntimeError(r1.blocker.reason)
 
     cand_path = formal / "01_req_parse" / "output" / "candidate_rows.json"
     cand = json.loads(cand_path.read_text(encoding="utf-8"))
     product = str(cand.get("product_name") or UNASSIGNED_PROJECT)
+    rows = cand.get("rows") if isinstance(cand.get("rows"), list) else []
+    _emit_batch(
+        formal,
+        event="batch_01_done",
+        summary=f"01 candidates={len(rows)} product={product}",
+        batch_id=bid,
+        stage_id="01_req_parse",
+        refs={"candidate_count": len(rows), "product_name": product},
+    )
 
     # Relocate under real product once known
     formal_new = paths.formal_run_dir(bid, product)
@@ -412,6 +474,15 @@ def run_batch_intake(
         ctx, stages["02_bug_task_extract"], ctx.stage_log_path(stages["02_bug_task_extract"])
     )
     if r2.blocker:
+        _emit_batch(
+            formal,
+            event="batch_blocked",
+            summary=f"02_bug_task_extract blocked: {r2.blocker.reason}",
+            batch_id=bid,
+            stage_id="02_bug_task_extract",
+            level="error",
+            refs={"step": r2.blocker.step},
+        )
         raise RuntimeError(r2.blocker.reason)
 
     ids_path = formal / "02_bug_task_extract" / "output" / "bug_ids.json"
@@ -424,6 +495,22 @@ def run_batch_intake(
         formal_run_dir=str(formal),
     )
     batch_dir = persist_batch_state(paths, state)
+    _emit_batch(
+        formal,
+        event="batch_ready",
+        summary=(
+            f"batch ready queue={len(state.queue)} rejected={len(state.rejected)} "
+            f"status={state.batch_status}"
+        ),
+        batch_id=bid,
+        stage_id="02_bug_task_extract",
+        refs={
+            "bug_ids": [q.bug_id for q in state.queue],
+            "rejected_count": len(state.rejected),
+            "batch_status": state.batch_status,
+            "product_name": state.product_name,
+        },
+    )
     # Ensure intermediate mirror of 02 exists (handler already mirrors; re-assert path)
     return state, batch_dir, formal
 
@@ -464,19 +551,50 @@ def run_project_batch(
         )
     else:
         batch_dir = batch_path.parent if batch_path else persist_batch_state(paths, state)
+        _emit_batch(
+            _formal_dir(state),
+            event="batch_resume",
+            summary=f"resume batch {state.batch_id} status={state.batch_status}",
+            batch_id=state.batch_id,
+            refs={"current_index": state.current_index, "queue_len": len(state.queue)},
+        )
+
+    formal = _formal_dir(state)
 
     if status_only or dry_run:
         state.batch_status = state.batch_status if state.queue else "empty"
         persist_batch_state(paths, state)
+        _emit_batch(
+            formal,
+            event="batch_dry_run" if dry_run else "batch_status",
+            summary=f"status_only/dry_run queue={len(state.queue)} status={state.batch_status}",
+            batch_id=state.batch_id,
+            refs={"batch_status": state.batch_status, "bug_ids": [q.bug_id for q in state.queue]},
+        )
         return state, batch_dir
 
     if not state.queue:
         state.batch_status = "empty"
         persist_batch_state(paths, state)
+        _emit_batch(
+            formal,
+            event="batch_empty",
+            summary="no auto-eligible bugs in queue",
+            batch_id=state.batch_id,
+            level="warn",
+            refs={"rejected_count": len(state.rejected)},
+        )
         return state, batch_dir
 
     state.batch_status = "running"
     persist_batch_state(paths, state)
+    _emit_batch(
+        formal,
+        event="batch_running",
+        summary=f"serial run start queue={len(state.queue)}",
+        batch_id=state.batch_id,
+        refs={"bug_ids": [q.bug_id for q in state.queue]},
+    )
 
     for idx, item in enumerate(state.queue):
         if item.status in ("completed", "skipped"):
@@ -485,6 +603,14 @@ def run_project_batch(
         item.status = "running"
         state.updated_at = _now_iso()
         persist_batch_state(paths, state)
+        _emit_batch(
+            formal,
+            event="batch_item_start",
+            summary=f"start bug {item.bug_id} ({idx + 1}/{len(state.queue)})",
+            batch_id=state.batch_id,
+            bug_id=item.bug_id,
+            refs={"index": idx, "title": item.title[:80]},
+        )
 
         wf_state = pipeline_fn(
             item.bug_id,
@@ -499,6 +625,14 @@ def run_project_batch(
         st = getattr(wf_state, "workflow_status", "") or ""
         if st == "completed":
             item.status = "completed"
+            _emit_batch(
+                formal,
+                event="batch_item_done",
+                summary=f"bug {item.bug_id} completed run={item.run_id}",
+                batch_id=state.batch_id,
+                bug_id=item.bug_id,
+                refs={"run_id": item.run_id, "workflow_status": st},
+            )
         elif st == "blocked":
             item.status = "blocked"
             item.reason = str(
@@ -506,12 +640,30 @@ def run_project_batch(
             )
             state.batch_status = "blocked"
             persist_batch_state(paths, state)
+            _emit_batch(
+                formal,
+                event="batch_blocked",
+                summary=f"bug {item.bug_id} blocked: {item.reason}",
+                batch_id=state.batch_id,
+                bug_id=item.bug_id,
+                level="warn",
+                refs={"run_id": item.run_id, "reason": item.reason},
+            )
             return state, batch_dir
         else:
             item.status = "blocked"
             item.reason = f"ended with status={st}"
             state.batch_status = "blocked"
             persist_batch_state(paths, state)
+            _emit_batch(
+                formal,
+                event="batch_blocked",
+                summary=f"bug {item.bug_id} ended status={st}",
+                batch_id=state.batch_id,
+                bug_id=item.bug_id,
+                level="warn",
+                refs={"run_id": item.run_id, "workflow_status": st},
+            )
             return state, batch_dir
 
         persist_batch_state(paths, state)
@@ -519,4 +671,11 @@ def run_project_batch(
     state.batch_status = "completed"
     state.updated_at = _now_iso()
     persist_batch_state(paths, state)
+    _emit_batch(
+        formal,
+        event="batch_completed",
+        summary=f"project batch completed ({len(state.queue)} bugs)",
+        batch_id=state.batch_id,
+        refs={"bug_ids": [q.bug_id for q in state.queue]},
+    )
     return state, batch_dir

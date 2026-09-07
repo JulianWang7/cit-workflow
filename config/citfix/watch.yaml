@@ -45,4 +45,7 @@ batch:
   item_running_timeout_seconds: 3600
 
 # Write escalate notices under run 14_closure/output/notifications when possible
-escalate_file_notify: true
+prefer_formal_watch: true
+scan_intermediate_runs: false
+event_heartbeat_enabled: false
+event_heartbeat_timeout_seconds: 1800
