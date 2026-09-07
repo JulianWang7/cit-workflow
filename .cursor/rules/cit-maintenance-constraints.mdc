@@ -1,0 +1,33 @@
+---
+description: "cit-workflow 维护三约束：EXP-CIT-004§2-5 架构基准；项目级 MCP/Skill 优先；runs_work 可读、持久写入须事先告知"
+alwaysApply: true
+---
+
+# cit-workflow 维护约束（强制）
+
+本仓库任意代码维护 / 功能扩展 / 重构均适用（含建设期，不限于 `/citfix` 跑 bug）。
+
+## 1. 架构基准（文档优先）
+
+- **业务框架真源**：知识库
+  `D:\Workspace\GDocuments\embedded-workflow-lab\knowledge-base\topics\cit\cit-automation-pipeline\EXP-CIT-004-CIT自动化流水线总览_2026-08-29.md`
+  的 **第 2、3、4、5 章**（①–⑧、泳道、第⑥步 debug、第⑦步上库三分支）。
+- 改流程语义、角色边界、⑥/⑦ 分支前：**先更新该文档（及 FIG-NPI）**，再改 `citfix/`、`contracts/`、skills。
+- **未更新文档前**，不得偏离 §2–5。
+- **运行时门禁**仍以仓内为准：`contracts/citfix_pipeline.json`、`docs/citfix-stage-gates.md`、`citfix/`（勿用阶段编号替代 NPI 业务含义）。
+
+## 2. 工具优先级（维护期）
+
+| 优先 | 允许 | 禁止默认 |
+|------|------|----------|
+| Skill | `.cursor/skills/cit*/` | `~/.cursor/skills/bugfix-*` 及任意用户级 skill |
+| MCP | `.cursor/mcp.json` → `scripts/cit_mcp_launch.py` | 启动路径含 `android-bugfix-flow` 的用户级 MCP |
+
+同名工具并存时只用不含 `android-bugfix-flow`、命令含 `cit_mcp_launch.py` 的实例。项目级缺失且必须临时用用户级时：回复标明缺失项、建议补齐路径、标注临时降级。详规见 `cit-project-isolation.mdc`。
+
+## 3. `runs_work`（中间产物）
+
+- **可读**：维护时查看 state / brief / checkpoint / 镜像 output **允许且必要**。
+- **引擎自动写镜像**：允许。
+- **持久代码/配置/脚本**，或把修复迭代落在中间产物上：**默认禁止**；确有必要须**事先告知用户**（写什么、为何不能落在 `citfix/`/`scripts/`/`tests/`/正式 `runs/`、是否可删）。
+- 持久改动默认落点：`citfix/`、`scripts/`、`contracts/`、`.cursor/`、`docs/`、`tests/`、正式 `runs/<PRODUCT>/<run_id>/`。

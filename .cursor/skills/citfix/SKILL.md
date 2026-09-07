@@ -18,8 +18,8 @@ description: |
 
 | 类型 | 根目录 | 用途 |
 |------|--------|------|
-| **正式产物（交付真源）** | `D:\Workspace\cit-workflow\runs\<run_id>\` | 校验通过的阶段 `output/` JSON、run.json、附件 |
-| **中间产物** | `D:\Workspace\cit-workflow\runs_work\projects\<PRODUCT>\runs\<run_id>\` | logs、AGENT_BRIEF、_rejected、workflow_state |
+| **正式产物（交付真源）** | `D:\Workspace\cit-workflow\runs\<PRODUCT>\<run_id>\` | 校验通过的阶段 `output/` JSON、run.json、附件、**`logs/`** |
+| **中间产物** | `D:\Workspace\cit-workflow\runs_work\projects\<PRODUCT>\runs\<run_id>\` | AGENT_BRIEF、_rejected、workflow_state 镜像（过渡） |
 
 引擎：正式 output → 镜像到中间；Agent 若只写中间，会 promote 到正式。
 
@@ -33,9 +33,12 @@ description: |
 | [ide-maintenance.md](ide-maintenance.md) | 完善流水线引擎/阶段代码（建设期） |
 
 阶段契约：`contracts/citfix_pipeline.json`  
-门禁契约（现行）：`docs/citfix-stage-gates.md`  
+NPI 契约：`contracts/citfix_npi_pipeline.json`（`/citfix npi`）  
+门禁契约（运行时字段）：`docs/citfix-stage-gates.md`  
+NPI 说明：`docs/citfix-npi.md`  
 设计说明：`docs/citfix-skill-design.md`  
-**[LEGACY]** EXP-CIT-004/009 等旧分册不作评审依据。
+**业务框架基准**：知识库 EXP-CIT-004 **第 2–5 章**（①–⑧ / 泳道 / ⑥ debug / ⑦ 上库三分支）；框架变更须先更新该文档再改代码。  
+**运行时门禁**：以本仓 `citfix/` + `contracts/` + `docs/citfix-stage-gates.md` 为准（勿用阶段编号替代 NPI 业务含义）。
 
 ---
 
@@ -53,6 +56,10 @@ description: |
 /citfix project slb783 --device <SN>
 /citfix project slb783 --dry-run
 /citfix project slb783 --resume
+/citfix npi srm6690d C:\path\CIT需求.xlsx
+/citfix npi srm6690d C:\path\CIT需求.xlsx --dry-run
+/citfix npi srm6690d --resume
+/citfix npi srm6690d --from-bug 98133
 ```
 
 | 输入 | 动作 |
@@ -66,7 +73,9 @@ description: |
 | `--debug` | **人工调试**：打印 `runs/<PRODUCT>/<run_id>`、中间路径、checkpoint、关键产物 |
 | `/citfix project <alias>` | 用禅道 `my_bugs` 拉**当前用户**任务，按产品别名模糊匹配 + CIT 门禁 + **仅 `verify_mode=auto`**，**串行**逐个 `/citfix <id>` |
 | `--device <SN>` | 预留：覆盖本 batch 的 `device_serial`（写入 batch_state / workspace） |
-| `--dry-run` | 只发现并写 01/02 产物，不跑单 bug 流水线 |
+| `--dry-run` | project：只发现并写 01/02；**npi**：只写 N1–N3 结构化证据，不开全自动测试 |
+| `/citfix npi <alias> <xlsx>` | NPI 需求表入口（位置参数路径，**无** `--excel`）；契约 `contracts/citfix_npi_pipeline.json` |
+| `/citfix npi <alias> --from-bug <id>` | N8：禅道「缺少测项」类 Bug → 补全测项草案 |
 
 `project` 关键字大小写不敏感；`<alias>` 与禅道产品名做关键词模糊匹配（如 `slb783` → `SLB783 - Android14`）。
 
@@ -82,7 +91,7 @@ description: |
 1. **定位 run** — 按 `bug_id` 找最新未完成 run
 2. **读状态** — `current_stage`、`workflow_status`、各 stage `status` / `blocker`
 3. **读 KB** — 当前阶段 EXP-CIT-* 分册（`kb_doc_path`）
-4. **读产物** — 正式 `cit-workflow/runs/<run_id>/<NN>_*/output/`；中间 brief/logs 在 `runs_work/projects/<PRODUCT>/runs/<run_id>/`
+4. **读产物** — 正式 `runs/<PRODUCT>/<run_id>/<NN>_*/output/` 与 `logs/`；中间 brief 在 `runs_work/projects/<PRODUCT>/runs/<run_id>/`
 5. **执行当前阶段**：
    - **03–06b**：可跑 `citfix.py --resume` 或按协议用手写/MCP
    - **07**：必读中间 `07_analysis/intermediate/AGENT_BRIEF.md` → **`cit-analyze`** → 写**正式** `root_cause_*.json`

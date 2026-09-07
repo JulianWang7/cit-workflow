@@ -1,8 +1,9 @@
 # citfix 阶段门禁契约（现行真源）
 
-> 版本：2026-09-02  
-> **Authority：本仓代码**（`citfix/`、`contracts/`、`.cursor/skills/cit*/`）  
-> **[LEGACY]** `EXP-CIT-004` / `EXP-CIT-009`（2026-08-29）仅作历史对照，**不得**作为评审或改码依据。
+> 版本：2026-09-07  
+> **Authority（运行时门禁）**：本仓代码（`citfix/`、`contracts/`、`.cursor/skills/cit*/`）与本文  
+> **Authority（业务框架）**：知识库 EXP-CIT-004 **第 2–5 章**（①–⑧ / 泳道 / ⑥ / ⑦）；框架变更先改该文档，再改本仓  
+> 分册 EXP-CIT-005～011 / 设计 EXP-CIT-012～018：阶段细节对照；与本文字段冲突时以本文 + 代码为准
 
 ## 1. 角色
 

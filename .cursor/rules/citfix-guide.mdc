@@ -11,7 +11,7 @@ alwaysApply: false
 用户输入 **`/citfix 97203`**（及 `--resume` / `--status` / `--new`）时：
 
 1. **加载 Skill**：`.cursor/skills/citfix/SKILL.md`（必读 `agent-protocol.md`）
-2. **按** `contracts/citfix_pipeline.json` **推进各阶段**（[LEGACY] EXP-CIT-004～011 仅历史对照）
+2. **按** `contracts/citfix_pipeline.json` **推进各阶段**；业务语义对齐知识库 EXP-CIT-004 **§2–5**（运行时门禁仍以 `docs/citfix-stage-gates.md` 为准）
 3. **当前处于工作流完善阶段**：已实现段正常推进；未就绪段卡点停住，等 `--resume` 续跑
 4. **不要**把 `scripts/citfix.py` 当作对用户的首条或唯一动作
 5. **只**用本仓 `.cursor/skills/cit*` 与项目 MCP（`cit_mcp_launch`）；**禁止**用户级 `bugfix-*`
@@ -29,6 +29,11 @@ alwaysApply: false
 | `/citfix project slb783 --device <SN>` | 同上，预留设备序列号覆盖 |
 | `/citfix project slb783 --dry-run` | 只拉清单写 batch，不执行 |
 | `/citfix project slb783 --resume` | 续跑该 alias 最新 batch |
+| `/citfix npi srm6690d <xlsx>` | NPI 需求表（路径为位置参数；无 `--excel`） |
+| `/citfix npi srm6690d --from-bug 98133` | 禅道缺失测项补全（N8） |
+| `/citfix npi srm6690d --dry-run` / `--resume` | NPI dry-run / 续跑 |
+
+NPI 细则：`.cursor/rules/citfix-npi-guide.mdc`、`docs/citfix-npi.md`；Skill：`cit-npi-ingest` / `cit-npi-map` / `cit-npi-approve` / `cit-npi-gap`。
 
 前置：已配置 ZenTao MCP（`~/.bugfix-flow/zentao.yaml`）。凭据（SSH/ADB/Gerrit）人工预置，命令运行时不再交互输入。
 

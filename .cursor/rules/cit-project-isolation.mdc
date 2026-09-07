@@ -27,8 +27,17 @@ alwaysApply: true
 
 若同名 MCP 同时出现，**只使用命令行含 `cit_mcp_launch.py` 的实例**。
 
+## 降级与上报（维护期）
+
+项目级 Skill/MCP 缺失时：
+
+1. 先尝试补齐项目配置（`.cursor/mcp.json` / `.cursor/skills/cit-*`），不要默默切用户级；
+2. 若必须临时使用用户级工具：回复开头标注
+   `⚠️ 项目级工具缺失，临时使用用户级：<name>；建议补齐：<path>`；
+3. 不得假定 `user-*-mcp` 与 `cit_mcp_launch` 为同一进程。
+
 ## 编排
 
 - 入口：`/citfix` → 项目 skill `citfix`
 - `scripts/citfix.py` 仅同步 auto 段状态，**不**替代 Agent 段，也**不**调用用户 skill
-- 07+ 正式产物写在 `cit-workflow/runs/<run_id>/<stage>/output/`；中间镜像 `runs_work/projects/<PRODUCT>/runs/<run_id>/`
+- 正式产物：`cit-workflow/runs/<PRODUCT>/<run_id>/<stage>/output/`；中间镜像：`runs_work/projects/<PRODUCT>/runs/<run_id>/`（可读；持久维护纪律见 `cit-maintenance-constraints.mdc`）

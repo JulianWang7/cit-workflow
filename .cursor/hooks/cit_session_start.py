@@ -95,6 +95,10 @@ def main() -> None:
             sys.path.insert(0, str(root))
         os.environ.setdefault("CIT_WORKFLOW_ROOT", str(root))
         os.environ.setdefault("BUGFLOW_ROOT", str(root))
+        _warn(
+            "维护约束：业务框架=EXP-CIT-004§2-5；工具=项目 MCP/Skill；"
+            "runs_work 可读，持久写入须事先告知"
+        )
         _check_tree(root)
         missing = _check_missing_packages()
         if missing:

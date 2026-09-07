@@ -21,6 +21,7 @@
 
 | 路径 | 用途 |
 |------|------|
+| 知识库 EXP-CIT-004 §2–5（及 FIG-NPI） | **业务框架变更时先改此处**，再改本仓 |
 | `citfix/` | 引擎、阶段 executor |
 | `tests/test_citfix_*.py` | 单测 |
 | `contracts/citfix_pipeline.json` | 阶段契约 |
@@ -30,16 +31,18 @@
 
 ## 禁止
 
-- 混淆路径角色：正式产物必须进 `cit-workflow/runs/<PRODUCT>/<run_id>/`；中间产物（logs/brief/_rejected）进 `runs_work/projects/<PRODUCT>/runs/<run_id>/`
+- 在未更新 EXP-CIT-004 §2–5（及 FIG-NPI）前，改变 NPI ①–⑧ / ⑥ / ⑦ 业务语义
+- 混淆路径角色：正式产物必须进 `cit-workflow/runs/<PRODUCT>/<run_id>/`；中间产物（brief/checkpoint/镜像）在 `runs_work/projects/<PRODUCT>/runs/<run_id>/`（**可读**；持久代码/配置默认不写 `runs_work`，确需写入须事先告知用户）
 - 在 `runs_work` 根目录堆临时 `.py`（辅助脚本放 `cit-workflow/tests/` / `scripts/`）
 - 修改已有 run 产物，除非用户点名修复测试数据或运行规定脚本落盘
+- 默认加载用户级 `bugfix-*` / 非 `cit_mcp_launch` MCP（缺失时临时降级须明示上报）
 
 ## 输出规范
 
 1. **代码**：符合现有 `citfix/` 风格；类型注解；无 inline import
 2. **pipeline.json**：新阶段必须补 `kb_doc` / `kb_file` / `required_outputs`
 3. **Skill**：主入口仍 Agent-first；脚本降级为「可选同步」
-4. **文档**：行为变更同步 `docs/citfix-skill-design.md`
+4. **文档**：行为变更同步 `docs/citfix-skill-design.md`；业务框架变更先同步 EXP-CIT-004 §2–5
 
 ## 验证
 

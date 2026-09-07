@@ -2,9 +2,11 @@
   "schema_version": "1.0",
   "pipeline_id": "citfix",
   "trigger": "/citfix {bug_id} | /citfix project <alias>",
-  "description": "CIT automation pipeline entry. Authority: citfix/ + this file + docs/citfix-stage-gates.md. [LEGACY] EXP-CIT-004..011 are historical only.",
+  "description": "CIT automation pipeline entry. Runtime authority: citfix/ + this file + docs/citfix-stage-gates.md. Business framework: EXP-CIT-004 chapters 2-5 (NPI 1-8 / swimlanes / step6 / step7).",
   "authority": "code",
   "stage_gates_doc": "docs/citfix-stage-gates.md",
+  "business_framework_doc": "EXP-CIT-004",
+  "business_framework_chapters": "2-5",
   "entry_modes": {
     "citfix_direct": {
       "description": "Start from bug id (/citfix 97203); skip req-table stages 01-02",
@@ -58,8 +60,8 @@
       "id": "00_run_registry",
       "dir": "00_runs",
       "title": "Run registry",
-      "legacy_kb_doc": "EXP-CIT-004",
-      "legacy_kb_file": "EXP-CIT-004-CIT自动化流水线总览与成熟度分层_2026-08-29.md",
+      "kb_doc": "EXP-CIT-004",
+      "kb_file": "EXP-CIT-004-CIT自动化流水线总览_2026-08-29.md",
       "executor": "auto",
       "required_outputs": ["workflow_state.json", "run.json"]
     },

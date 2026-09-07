@@ -4,7 +4,7 @@ CIT（Customer / Factory Inspection Test）自动化流水线仓库。以斜杠�
 
 | 项 | 说明 |
 |----|------|
-| 入口 | `/citfix <bug_id>` · `/citfix project <alias>` |
+| 入口 | `/citfix <bug_id>` · `/citfix project <alias>` · `/citfix npi <alias> <xlsx>` |
 | 引擎 | `citfix/` + `scripts/citfix.py` |
 | Skill | `.cursor/skills/citfix` 及 `cit-*` 阶段 skill |
 | MCP | `.cursor/mcp.json` → `scripts/cit_mcp_launch.py`（zentao / ssh / adb / …） |
@@ -52,9 +52,9 @@ cit-workflow/
 │   ├── cit_closure_run.py / cit_outbox_drain.py / …
 │   └── compile/                 # 编译路由脚本
 ├── plan_bank/<PRODUCT>/         # 跨 run 项目绑定（code_root / server / device_serial）
-├── runs/<PRODUCT>/<run_id>/     # 【正式产物】交付真源（单 bug 或 project batch_id）
+├── runs/<PRODUCT>/<run_id>/     # 【正式产物】交付真源 + logs/
 ├── runs_work/projects/<PRODUCT>/
-│   ├── runs/<run_id>/           # 【中间产物】logs / brief / checkpoint
+│   ├── runs/<run_id>/           # 【中间产物】brief / checkpoint / 镜像
 │   └── batches/<batch_id>/      # project 发现镜像 + batch_state.json
 ├── fixtures/ / tests/ / docs/
 ├── setup_env.cmd                # 一键环境引导（对齐 bugfix-setup --fix）
@@ -65,9 +65,12 @@ cit-workflow/
 
 | 类型 | 路径 | 内容 |
 |------|------|------|
-| **正式产物** | `runs/<PRODUCT>/<run_id>/` | 阶段 `output/`、附件、`run.json`、`workflow_state.json` |
-| **中间产物 / 日志** | `runs_work/projects/<PRODUCT>/runs/<run_id>/` | logs、AGENT_BRIEF、CHECKPOINT、output 镜像 |
+| **正式产物** | `runs/<PRODUCT>/<run_id>/` | 阶段 `output/`、附件、`run.json`、`workflow_state.json`、**`logs/`**（`run_events.jsonl` + `logs/stages/`） |
+| **中间产物** | `runs_work/projects/<PRODUCT>/runs/<run_id>/` | AGENT_BRIEF、CHECKPOINT、output 镜像（过渡；可删目标）。**可读**；持久代码/配置默认不写于此，确需写入须事先告知 |
 | **批处理发现** | 正式 `runs/<PRODUCT>/<batch_id>/`；中间 `…/batches/<batch_id>/` | 01/02 auto 产物 + `batch_state.json` |
+
+运行日志约定见 [`docs/citfix-logging.md`](docs/citfix-logging.md)。
+
 
 示例（单 Bug 81097 / 产品 `SLB783 - Android14`）：
 

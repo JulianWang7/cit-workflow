@@ -9,7 +9,7 @@
 
 | 角色 | 看什么 | 不看什么 |
 |------|--------|----------|
-| **人** | `README.md` → 本文 → `docs/citfix-workflow.md` → `docs/citfix-stage-gates.md` | 勿把 LEGACY EXP 当分册真源 |
+| **人** | `README.md` → 本文 → `docs/citfix-workflow.md` → `docs/citfix-stage-gates.md`；业务框架看知识库 EXP-CIT-004 **§2–5** | 勿用阶段编号替代 NPI ①–⑧ 业务含义 |
 | **Agent** | 本仓 `.cursor/skills/cit*` + `.cursor/rules/*.mdc` | 禁止 `~/.cursor/skills/bugfix-*` |
 | **机器** | `citfix/` 引擎 + `contracts/*.json` | skill 不能替代硬门禁 |
 

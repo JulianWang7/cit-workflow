@@ -2,8 +2,8 @@
 
 | 类型 | 根目录 | 内容 |
 |------|--------|------|
-| **正式产物（交付真源）** | `runs/<PRODUCT>/<run_id>/` | 阶段 `output/`、附件、`run.json`、`workflow_state.json` |
-| **中间产物** | `runs_work/projects/<PRODUCT>/runs/<run_id>/` | logs、AGENT_BRIEF、CHECKPOINT、output 镜像 |
+| **正式产物（交付真源）** | `runs/<PRODUCT>/<run_id>/` | 阶段 `output/`、附件、`run.json`、`workflow_state.json`、**`logs/`** |
+| **中间产物** | `runs_work/projects/<PRODUCT>/runs/<run_id>/` | AGENT_BRIEF、CHECKPOINT、output 镜像（过渡；可读；持久维护纪律见仓库根 `runs_work/README.md`） |
 
 示例：
 

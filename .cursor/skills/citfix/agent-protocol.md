@@ -39,6 +39,35 @@ Agent 每轮执行 `/citfix` 时必须遵守本协议。
 
 ## 2. 阶段内行为
 
+### 2.1 Agent 段运行里程碑（强制，LOG-07）
+
+结构化事件写在正式目录（**禁止**写进 `*/output/`）：
+
+```text
+runs/<PRODUCT>/<run_id>/logs/run_events.jsonl
+```
+
+| 时机 | event | 谁写 |
+|------|-------|------|
+| 进入阶段 / brief 已写 | `agent_stage_enter` | 引擎（写 brief 时）+ Agent 可补一条 |
+| 产物门禁通过 | `agent_gate_pass` | 引擎 |
+| 产物门禁失败 | `agent_gate_fail` | 引擎 |
+| 人工卡点 / 等待外部 | `agent_checkpoint` | **Agent 必须**用脚本追加 |
+
+追加命令（一行即可，禁止把全量对话落盘）：
+
+```powershell
+cd D:\Workspace\cit-workflow
+.\.venv\Scripts\python.exe scripts\cit_run_event.py `
+  --run-dir "runs/<PRODUCT>/<run_id>" `
+  --bug-id <id> --stage 07_analysis `
+  --event agent_checkpoint --level warn `
+  --summary "blocked: waiting device / more evidence"
+```
+
+卡点报告输出给用户后，**同时**写 `agent_checkpoint` 事件。详见 `docs/citfix-logging.md`。
+
+
 ### 自动段（03–06b）
 
 Agent **可以**：
@@ -84,7 +113,7 @@ Agent **必须**按下列顺序（**不得跳过、不得改用用户级 bugfix-
 
 #### 12_cit_test / 13_human_gate / 14_closure
 
-门禁契约见 `docs/citfix-stage-gates.md`（**现行真源**；EXP-CIT-004/009 为 [LEGACY]）。
+门禁契约见 `docs/citfix-stage-gates.md`（**运行时字段真源**）。业务框架（①–⑧ / ⑥ / ⑦）对齐知识库 EXP-CIT-004 **§2–5**；二者分层，互不替代。
 
 - 读 `06/context.json` → `routing.verify_mode`（`auto|human|hybrid`）
 - 12：写 `auto_assertions` / `human_assertions`；`VERIFY_PASS` 要求 auto 全 `passed=true`
